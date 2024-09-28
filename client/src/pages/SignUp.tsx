@@ -58,7 +58,7 @@ export default function SignUp() {
           Sign up
         </button>
         <p className="footer-text">
-        Already have an account?{" "}
+          Already have an account?{" "}
           <a href="#" className="sign-up-link">
             Sign in
           </a>

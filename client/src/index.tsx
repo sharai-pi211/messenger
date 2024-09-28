@@ -4,22 +4,20 @@ import "./index.css";
 import reportWebVitals from "./reportWebVitals";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
-import {
-  createBrowserRouter,
-  RouterProvider,
-} from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Main from "./pages/Main";
 import Contact from "./components/Contact";
 import ContactsList from "./components/ContactsList";
+import Panel from "./components/Panel";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Main/>,
+    element: <Main />,
   },
   {
     path: "/contacts",
-    element: <ContactsList/>,    
+    element: <ContactsList />,
     children: [
       {
         path: ":contactId",
@@ -29,11 +27,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/sign-in",
-    element: <SignIn/>,
+    element: <SignIn />,
   },
   {
     path: "/sign-up",
-    element: <SignUp/>,
+    element: <SignUp />,
   },
   // {
   //   path: "contacts/:contactId",

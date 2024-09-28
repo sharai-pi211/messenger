@@ -1,7 +1,6 @@
-import React from 'react';
-import { Form } from 'react-router-dom';
-import '../styles/Contact.css'
-
+import React from "react";
+import { Form } from "react-router-dom";
+import "../styles/Contact.css";
 
 interface Contact {
   first: string;
@@ -10,7 +9,7 @@ interface Contact {
   twitter?: string;
   notes?: string;
   favorite: boolean;
-  id?: string; 
+  id?: string;
 }
 
 export default function Contact() {
@@ -23,7 +22,7 @@ export default function Contact() {
   };
 
   return (
-    <div id="contact" className='contact'>
+    <div id="contact" className="contact">
       <div>
         <img
           key={contact.avatar}
@@ -31,7 +30,7 @@ export default function Contact() {
             contact.avatar ||
             `https://robohash.org/${contact.id}.png?size=200x200`
           }
-          alt={`${contact.first} ${contact.last}`} 
+          alt={`${contact.first} ${contact.last}`}
         />
       </div>
 
@@ -51,7 +50,7 @@ export default function Contact() {
             <a
               target="_blank"
               href={`https://twitter.com/${contact.twitter}`}
-              rel="noopener noreferrer" 
+              rel="noopener noreferrer"
             >
               {contact.twitter}
             </a>
@@ -64,10 +63,7 @@ export default function Contact() {
           <Form action="edit">
             <button type="submit">Edit</button>
           </Form>
-          <Form
-            method="post"
-            action="destroy"
-          >
+          <Form method="post" action="destroy">
             <button type="submit">Delete</button>
           </Form>
         </div>
