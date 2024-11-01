@@ -1,29 +1,27 @@
-const express = require('express');
-const router = express.Router();
-const User = require('../models/User');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const {generateToken, verifyToken} = require('../utils/middleware');
-const {AuthToken} = require('../utils/middleware');
+import User from "../models/User.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { generateToken, AuthToken } from "../utils/middleware.js";
 
-async function register(req, res) {
+export async function register(req, res) {
   try {
     if (!req.body.username || !req.body.email || !req.body.password) {
-      return res.status(400).json({ 
-        message: 'Необходимо заполнить все поля: username, email и password' 
+      return res.status(400).json({
+        message: "Необходимо заполнить все поля: username, email и password",
       });
     }
     const { username, email, password } = req.body;
 
     if (!isValidPassword(password)) {
-      return res.status(400).json({ 
-        message: 'Пароль должен быть не менее 6 символов, содержать цифры и специальные символы.' 
+      return res.status(400).json({
+        message:
+          "Пароль должен быть не менее 6 символов, содержать цифры и специальные символы.",
       });
     }
-   
+
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
     if (existingUser) {
-      return res.status(400).json({ message: 'Пользователь уже существует' });
+      return res.status(400).json({ message: "Пользователь уже существует" });
     }
 
     //хеширование пароля
@@ -33,7 +31,7 @@ async function register(req, res) {
     const newUser = new User({
       username,
       email,
-      password: hashedPassword
+      password: hashedPassword,
     });
 
     await newUser.save();
@@ -45,28 +43,28 @@ async function register(req, res) {
     await newUser.updateOne({ $set: { authToken } });
 
     res.status(201).json({
-      message: 'Пользователь успешно зарегистрирован',
+      message: "Пользователь успешно зарегистрирован",
       token,
-      userId: newUser._id
+      userId: newUser._id,
     });
   } catch (error) {
-    console.error('Ошибка при регистрации:', error);
-    res.status(500).json({ message: 'Произошла ошибка при регистрации' });
+    console.error("Ошибка при регистрации:", error);
+    res.status(500).json({ message: "Произошла ошибка при регистрации" });
   }
 }
 
 //аутентификация пользователя
-async function authenticate(req, res) {
+export async function authenticate(req, res) {
   try {
     const { username, password } = req.body;
     const user = await User.findOne({ username });
     if (!user) {
-      return res.status(401).json({ message: 'Неверные учетные данные' });
+      return res.status(401).json({ message: "Неверные учетные данные" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Неверные учетные данные' });
+      return res.status(401).json({ message: "Неверные учетные данные" });
     }
 
     const token = generateToken(user._id);
@@ -77,25 +75,26 @@ async function authenticate(req, res) {
 
     res.json({ token, userId: user._id });
   } catch (error) {
-    console.error('Ошибка при аутентификации:', error);
-    res.status(500).json({ message: 'Произошла ошибка при аутентификации' });
+    console.error("Ошибка при аутентификации:", error);
+    res.status(500).json({ message: "Произошла ошибка при аутентификации" });
   }
 }
 
 //авторизации
-async function isAuthenticated(req, res, next) {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-  
+export async function isAuthenticated(req, res, next) {
+  const token = req.header("Authorization")?.replace("Bearer ", "");
+
   if (!token) {
-    return res.status(401).json({ message: 'Токен отсутствует' });
+    return res.status(401).json({ message: "Токен отсутствует" });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     //существование user
     const user = await User.findOne({ _id: decoded.userId });
-    if (!user) return res.status(404).json({ message: "Пользователь не найден" });
+    if (!user)
+      return res.status(404).json({ message: "Пользователь не найден" });
 
     req.user = decoded;
     next();
@@ -112,5 +111,3 @@ function isValidPassword(password) {
 
   return true;
 }
-
-module.exports = { register, authenticate, isAuthenticated };

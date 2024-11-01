@@ -1,30 +1,31 @@
-//файл для вспомогательных функций
-const jwt = require('jsonwebtoken');
+// Полный импорт модуля и деструктуризация
+import jwt from "jsonwebtoken";
+const { sign, verify, JsonWebTokenError, TokenExpiredError } = jwt;
 
-//генерация JWT токена
-function generateToken(user) {
-  const token = jwt.sign(
-    { userId: user._id.toString() },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-  );
-  return token;
+// Генерация JWT токена
+export function generateToken(user) {
+  return sign({ userId: user._id.toString() }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
 }
 
-//проверка токена
-function verifyToken(token) {
+// Проверка токена
+export function verifyToken(token) {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verify(token, process.env.JWT_SECRET);
     return decoded.userId;
   } catch (error) {
-    console.error('Ошибка при верификации токена:', error);
+    if (error instanceof JsonWebTokenError) {
+      console.error("Ошибка при верификации токена:", error.message);
+    } else if (error instanceof TokenExpiredError) {
+      console.error("Срок действия токена истек:", error.message);
+    }
     throw error;
   }
 }
 
-
-//токен аутентификации для user
-class AuthToken {
+// Класс для работы с аутентификационным токеном
+export class AuthToken {
   constructor(userId) {
     this.userId = userId;
     this.token = null;
@@ -48,6 +49,3 @@ class AuthToken {
     return this.expirationDate && Date.now() > this.expirationDate;
   }
 }
-
-module.exports = AuthToken;
-module.exports = {generateToken, verifyToken};
