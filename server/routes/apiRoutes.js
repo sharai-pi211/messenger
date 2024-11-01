@@ -130,7 +130,7 @@ router.post("/messages", authController.isAuthenticated, async (req, res) => {
         .json({ error: "Нужны параметры chatId и content" });
     }
 
-    const userId = req.user._id;
+    const userId = req.user.userId;
 
     const chat = await Chat.findById(chatId);
     if (!chat) {
