@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import "../styles/ContactsList.css";
 import Panel from "./Panel";
+import Avatar from "../utils/avatar";
 
 interface Contact {
   name: string;
@@ -50,6 +51,8 @@ const contacts: Contact[] = [
 export default function ContactsList() {
   return (
     <div className="row">
+            <Avatar inputValue='test1' />
+
       <Panel />
       <div className="contacts-container">
         <div className="header">
