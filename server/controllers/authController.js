@@ -2,20 +2,22 @@ import User from "../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { generateToken, AuthToken } from "../utils/middleware.js";
+import generateAvatar from "../utils/avatarGenerator.js";
 
 export async function register(req, res) {
   try {
-    if (!req.body.username || !req.body.email || !req.body.password) {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
       return res.status(400).json({
         message: "Необходимо заполнить все поля: username, email и password",
       });
     }
-    const { username, email, password } = req.body;
 
     if (!isValidPassword(password)) {
       return res.status(400).json({
         message:
-          "Пароль должен быть не менее 6 символов, содержать цифры и специальные символы.",
+          "Пароль должен быть не менее 6 символов и содержать цифры и специальные символы.",
       });
     }
 
@@ -24,21 +26,26 @@ export async function register(req, res) {
       return res.status(400).json({ message: "Пользователь уже существует" });
     }
 
-    //хеширование пароля
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+
+    const avatar = await generateAvatar(username);
 
     const newUser = new User({
       username,
       email,
       password: hashedPassword,
+      avatarUrl: avatar,
     });
+
+    console.log("Новый пользователь перед сохранением:", newUser);
 
     await newUser.save();
 
     const token = generateToken(newUser._id);
+
     const authToken = new AuthToken(newUser._id);
-    authToken.setToken(token, Date.now() + 36000000); //срок действия токена
+    authToken.setToken(token, Date.now() + 36000000);
 
     await newUser.updateOne({ $set: { authToken } });
 
@@ -46,6 +53,7 @@ export async function register(req, res) {
       message: "Пользователь успешно зарегистрирован",
       token,
       userId: newUser._id,
+      avatar: newUser.avatarUrl,
     });
   } catch (error) {
     console.error("Ошибка при регистрации:", error);
@@ -53,7 +61,6 @@ export async function register(req, res) {
   }
 }
 
-//аутентификация пользователя
 export async function authenticate(req, res) {
   try {
     const { username, password } = req.body;
@@ -80,7 +87,6 @@ export async function authenticate(req, res) {
   }
 }
 
-//авторизации
 export async function isAuthenticated(req, res, next) {
   const token = req.header("Authorization")?.replace("Bearer ", "");
 
@@ -91,7 +97,6 @@ export async function isAuthenticated(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    //существование user
     const user = await User.findOne({ _id: decoded.userId });
     if (!user)
       return res.status(404).json({ message: "Пользователь не найден" });

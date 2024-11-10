@@ -18,7 +18,16 @@ const io = new Server(server, {
 
 app.use(json());
 app.use(urlencoded({ extended: false }));
-app.use(cors());
+
+app.use(
+  cors({
+    origin: "http://localhost:3001", 
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+
 
 import apiRoutes from "./routes/apiRoutes.js";
 app.use("/api", apiRoutes);
