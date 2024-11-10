@@ -1,13 +1,46 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/SignInUp.css";
 
 export default function SignIn() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
-  const handleSignIn = () => {
-    console.log("Email:", email);
-    console.log("Password:", password);
+  const handleSignIn = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
+
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        if (response.ok) {
+          console.log("Пользователь успешно вошел:", data);
+
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("username", data.username);
+
+          navigate("/contacts");
+        } else {
+          console.error("Ошибка при входе:", data.message);
+        }
+      } else {
+        const errorText = await response.text();
+        console.error("Ошибка от сервера:", errorText);
+      }
+    } catch (error) {
+      console.error("Ошибка запроса:", error);
+    }
   };
 
   return (
@@ -16,16 +49,16 @@ export default function SignIn() {
         <h2 className="title">Sign in</h2>
         <p className="subtitle">Welcome back! Please enter your details.</p>
         <div className="input-group">
-          <label htmlFor="email" className="label">
-            Email address
+          <label htmlFor="username" className="label">
+            Username
           </label>
           <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            id="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             className="input"
-            placeholder="user@gmail.com"
+            placeholder="your username"
           />
         </div>
 
@@ -47,7 +80,7 @@ export default function SignIn() {
         </button>
         <p className="footer-text">
           Don't have an account?{" "}
-          <a href="#" className="sign-up-link">
+          <a href="/sign-up" className="sign-up-link">
             Sign up
           </a>
         </p>

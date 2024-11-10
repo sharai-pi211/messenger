@@ -1,14 +1,48 @@
 import { useState } from "react";
 import "../styles/SignInUp.css";
+import { useNavigate } from "react-router-dom";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const navigate = useNavigate();
 
-  const handleSignIn = () => {
-    console.log("Email:", email);
-    console.log("Password:", password);
+  const handleSignUp = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: name,
+          email,
+          password,
+        }),
+      });
+
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        if (response.ok) {
+          console.log("Пользователь успешно зарегистрирован:", data);
+
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("username", data.username);
+
+          navigate("/contacts");
+        } else {
+          console.error("Ошибка при регистрации:", data.message);
+        }
+      } else {
+        const errorText = await response.text();
+        console.error("Ошибка от сервера:", errorText);
+      }
+    } catch (error) {
+      console.error("Ошибка запроса:", error);
+    }
   };
 
   return (
@@ -20,9 +54,10 @@ export default function SignUp() {
             Name
           </label>
           <input
-            type="name"
+            type="text"
             id="name"
-            onChange={(e) => setEmail(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             className="input"
             placeholder="your name"
           />
@@ -54,12 +89,12 @@ export default function SignUp() {
             placeholder="•••••••••••••••"
           />
         </div>
-        <button onClick={handleSignIn} className="sign-in-button">
+        <button onClick={handleSignUp} className="sign-in-button">
           Sign up
         </button>
         <p className="footer-text">
           Already have an account?{" "}
-          <a href="#" className="sign-up-link">
+          <a href="/sign-in" className="sign-up-link">
             Sign in
           </a>
         </p>
