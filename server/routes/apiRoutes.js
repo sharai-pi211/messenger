@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import User from "../models/User.js";
 import Chat from "../models/Chats.js";
 import * as authController from "../controllers/authController.js";
-import { deleteUser } from "../controllers/userController.js";
+import { deleteUser, getAllUsers } from "../controllers/userController.js";
 import {
   getAllMessages,
   getMessageById,
@@ -108,6 +108,7 @@ router.post("/chats", async (req, res) => {
 router.get("/chats/user/:userId", async (req, res) => {
   try {
     const chats = await getChatsByUser(req.params.userId);
+    console.log(chats);
     res.json(chats);
   } catch (error) {
     res
@@ -198,5 +199,14 @@ router.put(
     }
   },
 );
+
+router.get("/users", async (req, res) => {
+  try {
+    const users = await getAllUsers();
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: "Не удалось получить список пользователей", error: error.message });
+  }
+});
 
 export default router;

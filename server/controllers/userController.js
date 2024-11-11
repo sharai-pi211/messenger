@@ -67,3 +67,26 @@ export async function deleteUser(userId) {
     throw error;
   }
 }
+
+export async function getAllUsers() {
+  try {
+    const users = await User.find({}, "_id username status avatarUrl lastActive");
+
+    if (!users.length) {
+      throw new Error("Пользователи не найдены");
+    }
+
+    const formattedUsers = users.map((user) => ({
+      userId: user._id.toString(),
+      username: user.username,
+      status: user.status,
+      avatarUrl: user.avatarUrl,
+      lastActive: user.lastActive,
+    }));
+
+    return formattedUsers;
+  } catch (error) {
+    console.error("Ошибка при получении списка пользователей:", error);
+    throw error;
+  }
+}

@@ -5,9 +5,7 @@ import Message from "../models/Message.js";
 export async function createOrUpdateChat(...userIds) {
   try {
     const existingChat = await Chat.findOne({
-      $or: userIds.map((id) => ({
-        participants: { $in: [id] },
-      })),
+      participants: { $all: userIds },
     });
 
     if (existingChat) {
@@ -36,13 +34,15 @@ export async function getChatsByUser(userId) {
   try {
     const chats = await Chat.find({
       $or: [{ participants: userId }, { participants: { $in: [userId] } }],
-    });
+    }).populate("participants", "username avatarUrl status lastActive");
+
     return chats;
   } catch (error) {
     console.error("Ошибка при получении чатов пользователя:", error);
     throw error;
   }
 }
+
 
 // получение сообщений чата
 export async function getChatMessages(chatId) {
