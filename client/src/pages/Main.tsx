@@ -46,6 +46,11 @@ export default function Main() {
             </Link>
           </li>
           <li className="nav-item">
+            <Link to="/chats" className="nav-link" title="Chats">
+              <img src="/contact.png" alt="Chats" className="nav-icon" />
+            </Link>
+          </li>
+          <li className="nav-item">
             <Link to="/sign-in" className="nav-link" title="Sign In">
               <img
                 src="/images/sign-in.png"

@@ -72,7 +72,7 @@ export default function Panel() {
           </Link>
         </li>
         <li className="nav-item">
-          <Link to="/#" className="nav-link" title="Messages">
+          <Link to="/chats" className="nav-link" title="Messages">
             <img src="/messages.svg" alt="Messages" className="nav-icon" />
           </Link>
         </li>

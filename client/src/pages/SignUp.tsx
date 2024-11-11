@@ -31,8 +31,9 @@ export default function SignUp() {
 
           localStorage.setItem("token", data.token);
           localStorage.setItem("username", data.username);
+          localStorage.setItem("userId", data.userId);
 
-          navigate("/contacts");
+          navigate("/chats");
         } else {
           console.error("Ошибка при регистрации:", data.message);
         }

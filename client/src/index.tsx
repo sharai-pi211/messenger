@@ -8,7 +8,6 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Main from "./pages/Main";
 import Contact from "./components/Contact";
 import ContactsList from "./components/ContactsList";
-import Panel from "./components/Panel";
 
 const router = createBrowserRouter([
   {
@@ -16,7 +15,7 @@ const router = createBrowserRouter([
     element: <Main />,
   },
   {
-    path: "/contacts",
+    path: "/chats",
     element: <ContactsList />,
     children: [
       {
