@@ -7,7 +7,8 @@ import SignUp from "./pages/SignUp";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Main from "./pages/Main";
 import Contact from "./components/Contact";
-import ContactsList from "./components/ContactsList";
+import ContactsList from "./components/ChatsList";
+import ChatsList from "./components/ChatsList";
 
 const router = createBrowserRouter([
   {
@@ -16,7 +17,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/chats",
-    element: <ContactsList />,
+    element: <ChatsList />,
     children: [
       {
         path: ":contactId",
