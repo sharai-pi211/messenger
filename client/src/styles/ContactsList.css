@@ -44,12 +44,11 @@
   border: 1px solid #e0e0e0;
   border-radius: 15px;
   font-size: 16px;
-  margin-left: 20px;
   background-color: var(--lg);
 }
 
 .contacts-list {
-  max-height: 80vh;
+  max-height: 86vh;
   overflow-y: auto;
   scrollbar-width: none;
   margin: 10px;

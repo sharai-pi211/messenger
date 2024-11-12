@@ -9,6 +9,7 @@ import Main from "./pages/Main";
 import Contact from "./components/Contact";
 import ContactsList from "./components/ChatsList";
 import ChatsList from "./components/ChatsList";
+import Chat from "./components/Chat";
 
 const router = createBrowserRouter([
   {
@@ -20,8 +21,8 @@ const router = createBrowserRouter([
     element: <ChatsList />,
     children: [
       {
-        path: ":contactId",
-        element: <Contact />,
+        path: ":chatId",
+        element: <Chat />,
       },
     ],
   },

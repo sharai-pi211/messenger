@@ -1,0 +1,12 @@
+.chat-container{
+    height: 100vh;
+    width: 75%;
+    background-color: var(--white);
+    border-radius: 12px;
+    margin-left: 20px;
+}
+
+.chat-header {
+    border-bottom: 1px solid #ccc; /* или любое другое значение цвета */
+  }
+  
