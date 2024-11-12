@@ -73,7 +73,39 @@ router.delete("/delete", authController.isAuthenticated, async (req, res) => {
   }
 });
 
-//чаты
+// //чаты
+// router.post("/chats", async (req, res) => {
+//   try {
+//     const userIds = Object.values(req.body);
+
+//     if (userIds.length < 2) {
+//       return res
+//         .status(400)
+//         .json({ error: "Нужны минимум два пользователя для создания чата" });
+//     }
+
+//     const uniqueUserIds = [...new Set(userIds)];
+//     if (uniqueUserIds.length !== userIds.length) {
+//       return res
+//         .status(400)
+//         .json({ error: "Дубликаты пользователей недопустимы" });
+//     }
+
+//     const chat = await createOrUpdateChat(...uniqueUserIds);
+
+//     res.status(201).json(chat);
+//   } catch (error) {
+//     console.error("Ошибка при создании чата:", error);
+//     res
+//       .status(500)
+//       .json({
+//         message: "Произошла ошибка при создании чата",
+//         error: error.message,
+//       });
+//   }
+// });
+
+// Обработчик создания чатов
 router.post("/chats", async (req, res) => {
   try {
     const userIds = Object.values(req.body);
@@ -93,17 +125,24 @@ router.post("/chats", async (req, res) => {
 
     const chat = await createOrUpdateChat(...uniqueUserIds);
 
+    // Отправляем событие через WebSocket всем подключённым клиентам
+    req.app.get("wss").clients.forEach((client) => {
+      if (client.readyState === client.OPEN) {
+        client.send(JSON.stringify({ event: "chatUpdated", data: chat }));
+      }
+    });
+
+    // Возвращаем HTTP-ответ
     res.status(201).json(chat);
   } catch (error) {
     console.error("Ошибка при создании чата:", error);
-    res
-      .status(500)
-      .json({
-        message: "Произошла ошибка при создании чата",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Произошла ошибка при создании чата",
+      error: error.message,
+    });
   }
 });
+
 
 router.get("/chats/user/:userId", async (req, res) => {
   try {
