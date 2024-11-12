@@ -4,6 +4,7 @@ import "../styles/ContactsList.css";
 import Panel from "./Panel";
 import formatLastActive from "../utils/formatLastActive";
 import AddContactModal from "./AddContactModal";
+import { useWebSocket } from "../context/WebSocketContext";
 
 interface Chat {
   chatId: string;
@@ -14,8 +15,6 @@ interface Chat {
   lastActive: string;
 }
 
-let ws: WebSocket | null = null;
-
 export default function ChatsList() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
@@ -24,69 +23,86 @@ export default function ChatsList() {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const navigate = useNavigate();
+  const ws = useWebSocket();
 
   const fetchChats = () => {
     const userId = localStorage.getItem("userId");
 
     if (userId && ws && ws.readyState === WebSocket.OPEN) {
-      console.log("Отправляем запрос на получение чатов через WebSocket");
+      
       ws.send(JSON.stringify({ event: "getUserChats", data: userId }));
     }
   };
 
   useEffect(() => {
-    if (!ws || ws.readyState === WebSocket.CLOSED) {
-      ws = new WebSocket("ws://localhost:3000");
-
+    if (!ws) {
+      
+      return;
+    }
+  
+    // Проверяем состояние WebSocket перед отправкой
+    if (ws.readyState === WebSocket.OPEN) {
+      fetchChats();
+    } else {
+      
       ws.onopen = () => {
-        console.log("WebSocket соединение установлено");
+        
         fetchChats();
       };
-
-      ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          if (message.event === "userChats") {
-            const formattedData = message.data.map((chat: any) => {
-              const userId = localStorage.getItem("userId");
-              const otherParticipant = chat.participants.find(
-                (participant: any) => participant._id !== userId
-              );
-
-              return {
-                chatId: chat._id,
-                userId: otherParticipant._id,
-                username: otherParticipant.username,
-                status: otherParticipant.status,
-                avatarUrl: otherParticipant.avatarUrl,
-                lastActive: otherParticipant.lastActive || "",
-              };
-            });
-
-            setChats(formattedData);
-            setFilteredChats(formattedData);
-            setLoading(false);
-          }
-        } catch (error) {
-          console.error("Ошибка при парсинге сообщения:", error);
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error("Ошибка WebSocket:", error);
-        setError("Ошибка подключения к WebSocket серверу");
-        setLoading(false);
-      };
-
-      ws.onclose = () => {
-        console.log("WebSocket соединение закрыто");
-        setError("Соединение с сервером потеряно");
-        setLoading(false);
-      };
     }
-  }, []);
+  
+    // Обработчик сообщений WebSocket
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        
+  
+        if (message.event === "userChats") {
+          
+          const formattedData = message.data.map((chat: any) => {
+            const userId = localStorage.getItem("userId");
+            const otherParticipant = chat.participants.find(
+              (participant: any) => participant._id !== userId
+            );
 
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+            return {
+              chatId: chat._id,
+              userId: otherParticipant._id,
+              username: otherParticipant.username,
+              status: otherParticipant.status,
+              avatarUrl: otherParticipant.avatarUrl,
+              lastActive: otherParticipant.lastActive || "",
+            };
+          });
+
+          setChats(formattedData);
+          setFilteredChats(formattedData);
+          setLoading(false);
+          // setChats(message.data);
+          // setFilteredChats(message.data);
+          // setLoading(false);
+        } else if (message.event === "error") {
+          
+          setError(message.message);
+          setLoading(false);
+        }
+      } catch (error) {
+        
+      }
+    };
+  
+    // Очистка обработчиков при размонтировании
+    return () => {
+      if (ws) {
+        ws.onopen = null;
+        ws.onmessage = null;
+      }
+    };
+  }, [ws]);
+  
+
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
 
@@ -96,10 +112,11 @@ export default function ChatsList() {
     setFilteredChats(filtered);
   };
 
-  const handleChatClick = (chatId: string) => {
-    console.log(`нажат чат ${chatId}`);
-    navigate(`/chats/${chatId}`);
+  const handleChatClick = (chatId: string, chatPartnerName: string) => {
+    console.log(`Нажат чат ${chatId}, собеседник: ${chatPartnerName}`);
+    navigate(`/chats/${chatId}`, { state: { chatPartnerName } });
   };
+  
 
   return (
     <div className="row">
@@ -112,16 +129,16 @@ export default function ChatsList() {
           </button>
         </div>
         <div className="contacts-list">
-            <div className="search-bar">
-           <input
-            type="text"
-            placeholder="Search here..."
-            value={searchQuery}
-            onChange={handleSearch}
-          />
-        </div>
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder="Search here..."
+              value={searchQuery}
+              onChange={handleSearch}
+            />
+          </div>
           {filteredChats.map((chat) => (
-            <div key={chat.chatId} className="contact-item" onClick={() => handleChatClick(chat.chatId)}>
+            <div key={chat.chatId} className="contact-item" onClick={() => handleChatClick(chat.chatId, chat.username)}>
               <div className="avatar">
                 {chat.avatarUrl ? (
                   <img src={chat.avatarUrl} alt={chat.username} />

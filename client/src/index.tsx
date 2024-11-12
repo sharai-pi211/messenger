@@ -10,6 +10,7 @@ import Contact from "./components/Contact";
 import ContactsList from "./components/ChatsList";
 import ChatsList from "./components/ChatsList";
 import Chat from "./components/Chat";
+import { WebSocketProvider } from "./context/WebSocketContext";
 
 const router = createBrowserRouter([
   {
@@ -45,7 +46,9 @@ const root = ReactDOM.createRoot(
 );
 root.render(
   <React.StrictMode>
+    <WebSocketProvider>
     <RouterProvider router={router} />
+    </WebSocketProvider>
   </React.StrictMode>,
 );
 
