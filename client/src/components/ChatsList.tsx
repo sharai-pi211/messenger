@@ -14,6 +14,8 @@ interface Chat {
   lastActive: string;
 }
 
+let ws: WebSocket | null = null;
+
 export default function ChatsList() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
@@ -22,40 +24,94 @@ export default function ChatsList() {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  const fetchChats = async () => {
-    try {
-      const userId = localStorage.getItem("userId");
-      const response = await fetch(
-        `http://localhost:3000/api/chats/user/${userId}`
-      );
-      const data = await response.json();
+  const fetchChats = () => {
+    const userId = localStorage.getItem("userId");
 
-      console.log("Полученные чаты:", data);
-
-      const formattedData = data.map((chat: any) => {
-        const otherParticipant = chat.participants.find(
-          (participant: any) => participant._id !== userId
-        );
-
-        return {
-          chatId: chat._id,
-          userId: otherParticipant._id,
-          username: otherParticipant.username,
-          status: otherParticipant.status,
-          avatarUrl: otherParticipant.avatarUrl,
-          lastActive: otherParticipant.lastActive || "",
-        };
-      });
-
-      setChats(formattedData);
-      setFilteredChats(formattedData);
-      setLoading(false);
-    } catch (error: unknown) {
-      console.error("Ошибка при получении чатов:", error);
-      setError(error instanceof Error ? error.message : String(error));
-      setLoading(false);
+    if (userId && ws && ws.readyState === WebSocket.OPEN) {
+      console.log("Отправляем запрос на получение чатов через WebSocket");
+      try {
+        ws.send(JSON.stringify({ event: "getUserChats", data: userId }));
+      } catch (error) {
+        console.error("Ошибка при отправке сообщения:", error);
+        setError("Не удалось отправить запрос на получение чатов");
+        setLoading(false);
+      }
     }
   };
+
+  useEffect(() => {
+    if (!ws || ws.readyState === WebSocket.CLOSED) {
+      ws = new WebSocket("ws://localhost:3000");
+
+      ws.onopen = () => {
+        console.log("WebSocket соединение установлено");
+        fetchChats();
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          console.log("Получено сообщение:", message);
+      
+          if (message.event === "userChats") {
+            console.log("Получены чаты через WebSocket:", message.data);
+      
+            const formattedData = message.data.map((chat: any) => {
+              const userId = localStorage.getItem("userId");
+              const otherParticipant = chat.participants.find(
+                (participant: any) => participant._id !== userId
+              );
+      
+              return {
+                chatId: chat._id,
+                userId: otherParticipant._id,
+                username: otherParticipant.username,
+                status: otherParticipant.status,
+                avatarUrl: otherParticipant.avatarUrl,
+                lastActive: otherParticipant.lastActive || "",
+              };
+            });
+      
+            setChats(formattedData);
+            setFilteredChats(formattedData);
+            setLoading(false);
+          } else if (message.event === "chatUpdated") {
+            console.log("Чат обновлён, выполняется обновление списка чатов");
+            fetchChats(); // Запрос на обновление списка чатов
+          } else if (message.event === "error") {
+            console.error("Ошибка через WebSocket:", message.message);
+            setError(message.message);
+            setLoading(false);
+          }
+        } catch (error) {
+          console.error("Ошибка при парсинге сообщения:", error);
+          setError("Ошибка при обработке данных");
+          setLoading(false);
+        }
+      };
+      
+
+      ws.onerror = (error) => {
+        console.error("Ошибка WebSocket:", error);
+        // setError("Ошибка подключения к WebSocket серверу");
+        setLoading(false);
+      };
+
+      ws.onclose = () => {
+        console.log("WebSocket соединение закрыто");
+        // setError("Соединение с сервером потеряно");
+        setLoading(false);
+      };
+    }
+
+    // Очистка соединения при размонтировании компонента
+    return () => {
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+    };
+  }, []);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
@@ -69,10 +125,6 @@ export default function ChatsList() {
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
-
-  useEffect(() => {
-    fetchChats();
-  }, []);
 
   if (loading) {
     return <div>Загрузка чатов...</div>;
@@ -130,7 +182,6 @@ export default function ChatsList() {
         </div>
       </div>
 
-      {/* Модальное окно для добавления контакта */}
       {isModalOpen && <AddContactModal onClose={closeModal} />}
       <Outlet />
     </div>
