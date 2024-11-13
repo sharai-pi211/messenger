@@ -73,38 +73,6 @@ router.delete("/delete", authController.isAuthenticated, async (req, res) => {
   }
 });
 
-// //чаты
-// router.post("/chats", async (req, res) => {
-//   try {
-//     const userIds = Object.values(req.body);
-
-//     if (userIds.length < 2) {
-//       return res
-//         .status(400)
-//         .json({ error: "Нужны минимум два пользователя для создания чата" });
-//     }
-
-//     const uniqueUserIds = [...new Set(userIds)];
-//     if (uniqueUserIds.length !== userIds.length) {
-//       return res
-//         .status(400)
-//         .json({ error: "Дубликаты пользователей недопустимы" });
-//     }
-
-//     const chat = await createOrUpdateChat(...uniqueUserIds);
-
-//     res.status(201).json(chat);
-//   } catch (error) {
-//     console.error("Ошибка при создании чата:", error);
-//     res
-//       .status(500)
-//       .json({
-//         message: "Произошла ошибка при создании чата",
-//         error: error.message,
-//       });
-//   }
-// });
-
 // Обработчик создания чатов
 router.post("/chats", async (req, res) => {
   try {
@@ -245,6 +213,26 @@ router.get("/users", async (req, res) => {
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ message: "Не удалось получить список пользователей", error: error.message });
+  }
+});
+
+
+router.get('/:chatId', async (req, res) => {
+  try {
+    const chatId = req.params.chatId;
+    const messages = await getChatMessages(chatId);
+    
+    if (!messages || messages.length === 0) {
+      return res.status(404).json({ message: 'Сообщения для этого чата не найдены' });
+    }
+
+    res.json(messages);
+  } catch (error) {
+    console.error("Ошибка при получении сообщений чата:", error);
+    res.status(500).json({
+      message: "Ошибка при получении сообщений чата",
+      error: error.message,
+    });
   }
 });
 

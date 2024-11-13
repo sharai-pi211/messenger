@@ -1,6 +1,6 @@
 // websocketServer.js
 import { WebSocketServer } from "ws";
-import { getChatsByUser } from "./controllers/chatController.js";
+import { getChatsByUser, getChatMessages } from "./controllers/chatController.js";
 
 export function setupWebSocket(server, app) {
   const wss = new WebSocketServer({ server });
@@ -22,10 +22,19 @@ export function setupWebSocket(server, app) {
   
         const { event, data } = parsedMessage;
 
+        // Обработка события получения чатов пользователя
         if (event === "getUserChats") {
           const userId = data;
           const chats = await getChatsByUser(userId);
           ws.send(JSON.stringify({ event: "userChats", data: chats }));
+
+        // Обработка события получения сообщений чата
+        } else if (event === "getChatMessages") {
+          const chatId = data;
+          const messages = await getChatMessages(chatId);
+          ws.send(JSON.stringify({ event: "chatMessages", data: messages }));
+
+        // Обработка неизвестного события
         } else {
           ws.send(JSON.stringify({ event: "error", message: "Неизвестное событие" }));
         }

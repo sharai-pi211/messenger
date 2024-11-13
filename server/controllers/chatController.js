@@ -52,7 +52,13 @@ export async function getChatMessages(chatId) {
       throw new Error("Чат не найден");
     }
 
-    const messages = await Message.find({ chatId: { $in: chat.messages } });
+    // Если в чате пока нет сообщений, возвращаем пустой массив
+    if (!chat.messages || chat.messages.length === 0) {
+      console.log("Сообщений в чате нет, возвращаем пустой массив");
+      return [];
+    }
+
+    const messages = await Message.find({ _id: { $in: chat.messages } });
     return messages;
   } catch (error) {
     console.error("Ошибка при получении сообщений чата:", error);
@@ -60,11 +66,11 @@ export async function getChatMessages(chatId) {
   }
 }
 
-// создание нового сообщения в чате
 export async function createMessage(chatId, userId, content) {
   const message = new Message({
     content,
     sender: userId,
+    conversation_id: chatId, // Добавляем conversation_id
     timestamp: new Date(),
     read: false,
     type: "text",
