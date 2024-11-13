@@ -65,11 +65,12 @@ export async function getChatMessages(chatId) {
     throw error;
   }
 }
-// создание нового сообщения в чате
-export async function createMessage(chatId, userId, content, wss) {
+
+export async function createMessage(chatId, sender, content, wss) {
+  console.log("userId", sender);
   const message = new Message({
     content,
-    sender: userId,
+    sender: sender,
     timestamp: new Date(),
     read: false,
     type: "text",
@@ -78,6 +79,8 @@ export async function createMessage(chatId, userId, content, wss) {
     deleted_by: null,
     conversation_id: chatId,
   });
+
+  console.log("message", message);
 
   try {
     await message.save();
@@ -88,7 +91,6 @@ export async function createMessage(chatId, userId, content, wss) {
     chat.messages.push(message._id);
     await chat.save();
 
-    // Уведомляем всех клиентов через WebSocket
     const formattedMessage = {
       _id: message._id,
       content: message.content,
@@ -97,7 +99,8 @@ export async function createMessage(chatId, userId, content, wss) {
       conversation_id: chatId,
     };
 
-    // Рассылаем сообщение всем клиентам
+    console.log("formattedMessage", formattedMessage);
+
     wss.clients.forEach((client) => {
       if (client.readyState === client.OPEN) {
         client.send(
@@ -108,6 +111,8 @@ export async function createMessage(chatId, userId, content, wss) {
         );
       }
     });
+
+    console.log(message);
 
     return message;
   } catch (error) {
