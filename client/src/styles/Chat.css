@@ -13,10 +13,25 @@
   border-bottom: 1px solid #ccc;
 }
 
-.messages-list{
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.messages-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-list::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 10px;
+}
+
+.messages-list::-webkit-scrollbar-track {
+  background-color: #f0f0f0;
+  border-radius: 10px;
 }
 
 .message-item {
@@ -38,10 +53,9 @@
   justify-self: start;
 }
 
-.message-input{
+.message-input {
   justify-self: flex-end;
   width: 100%;
-
 }
 
 .message-input input {

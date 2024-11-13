@@ -6,7 +6,7 @@ import { useParams, useLocation } from "react-router-dom";
 interface Message {
   messageId: string;
   content: string;
-  senderId: string;
+  sender: string;
   recipientId: string;
   timestamp: string;
   read: boolean;
@@ -26,22 +26,29 @@ export default function Chat() {
 
   useEffect(() => {
     if (chatId && ws && ws.readyState === WebSocket.OPEN) {
-      console.log(`Открыт чат с ID: ${chatId}, отправляем запрос на получение сообщений`);
-  
-      // Отправляем запрос на получение сообщений чата
+      console.log(
+        `Открыт чат с ID: ${chatId}, отправляем запрос на получение сообщений`
+      );
+
       ws.send(JSON.stringify({ event: "getChatMessages", data: chatId }));
-  
-      // Обрабатываем ответ от WebSocket
+
       ws.onmessage = (event) => {
         try {
           const response = JSON.parse(event.data);
           console.log("Полученные данные:", response);
-  
-          // Проверяем, что это событие с сообщениями чата
+
           if (response.event === "chatMessages") {
             setMessages(response.data || []);
-          } else if (response.event === "error") {
-            console.error("Ошибка при получении сообщений чата:", response.message);
+          } else if (response.event === "newMessage" && response.data.conversation_id === chatId) {
+            // Добавляем новое сообщение в список
+            setMessages((prevMessages) => [...prevMessages, response.data]);
+          }
+          
+          else if (response.event === "error") {
+            console.error(
+              "Ошибка при получении сообщений чата:",
+              response.message
+            );
           }
         } catch (error) {
           console.error("Ошибка при парсинге сообщения:", error);
@@ -53,7 +60,7 @@ export default function Chat() {
   return (
     <div className="chat-container">
       <div className="chat-header">
-      <h2>{chatPartner}</h2>
+        <h2>{chatPartner}</h2>
       </div>
 
       {messages.length === 0 ? (
@@ -65,9 +72,7 @@ export default function Chat() {
           {messages.map((message) => (
             <div
               key={message.messageId}
-              className={`message-item ${
-                message.senderId === userId ? "message-left" : "message-right"
-              }`}
+              className={`message-item ${message.sender === userId ? "message-right" : "message-left"}`}
             >
               <p>{message.content}</p>
               <span>{new Date(message.timestamp).toLocaleString()}</span>
@@ -75,7 +80,6 @@ export default function Chat() {
           ))}
         </div>
       )}
-
 
       <div className="message-input">
         <input
