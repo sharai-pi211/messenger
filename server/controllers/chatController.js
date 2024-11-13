@@ -65,18 +65,18 @@ export async function getChatMessages(chatId) {
     throw error;
   }
 }
-
-export async function createMessage(chatId, userId, content) {
+// создание нового сообщения в чате
+export async function createMessage(chatId, userId, content, wss) {
   const message = new Message({
     content,
     sender: userId,
-    conversation_id: chatId, // Добавляем conversation_id
     timestamp: new Date(),
     read: false,
     type: "text",
     media_URL: null,
     is_deleted: false,
     deleted_by: null,
+    conversation_id: chatId,
   });
 
   try {
@@ -87,6 +87,27 @@ export async function createMessage(chatId, userId, content) {
     }
     chat.messages.push(message._id);
     await chat.save();
+
+    // Уведомляем всех клиентов через WebSocket
+    const formattedMessage = {
+      _id: message._id,
+      content: message.content,
+      sender: message.sender,
+      timestamp: message.timestamp,
+      conversation_id: chatId,
+    };
+
+    // Рассылаем сообщение всем клиентам
+    wss.clients.forEach((client) => {
+      if (client.readyState === client.OPEN) {
+        client.send(
+          JSON.stringify({
+            event: "newMessage",
+            data: formattedMessage,
+          })
+        );
+      }
+    });
 
     return message;
   } catch (error) {

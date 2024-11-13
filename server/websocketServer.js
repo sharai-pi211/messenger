@@ -35,7 +35,13 @@ export function setupWebSocket(server, app) {
           ws.send(JSON.stringify({ event: "chatMessages", data: messages }));
 
         // Обработка неизвестного события
-        } else {
+        }
+        else if (event === "createMessage") {
+          const { chatId, userId, content } = data;
+          await createMessage(chatId, userId, content, wss);
+        }
+        
+        else {
           ws.send(JSON.stringify({ event: "error", message: "Неизвестное событие" }));
         }
       } catch (error) {

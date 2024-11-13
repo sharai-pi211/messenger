@@ -145,7 +145,9 @@ router.post("/messages", authController.isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: "Чат не найден" });
     }
 
-    const newMessage = await createMessage(chatId, userId, content);
+    const wss = req.app.get("wss");
+
+    const newMessage = await createMessage(chatId, userId, content, wss);
 
     res.status(201).json({
       message: "Сообщение создано успешно",
