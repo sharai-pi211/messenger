@@ -21,14 +21,12 @@ export default function Chat() {
   const userId = localStorage.getItem("userId");
   const location = useLocation();
   const chatPartner = location.state?.chatPartnerName || "Собеседник";
-
   const ws = useWebSocket();
 
+  // Обработка получения сообщений
   useEffect(() => {
     if (chatId && ws && ws.readyState === WebSocket.OPEN) {
-      console.log(
-        `Открыт чат с ID: ${chatId}, отправляем запрос на получение сообщений`
-      );
+      console.log(`Открыт чат с ID: ${chatId}, отправляем запрос на получение сообщений`);
 
       ws.send(JSON.stringify({ event: "getChatMessages", data: chatId }));
 
@@ -40,15 +38,9 @@ export default function Chat() {
           if (response.event === "chatMessages") {
             setMessages(response.data || []);
           } else if (response.event === "newMessage" && response.data.conversation_id === chatId) {
-            // Добавляем новое сообщение в список
             setMessages((prevMessages) => [...prevMessages, response.data]);
-          }
-          
-          else if (response.event === "error") {
-            console.error(
-              "Ошибка при получении сообщений чата:",
-              response.message
-            );
+          } else if (response.event === "error") {
+            console.error("Ошибка при получении сообщений чата:", response.message);
           }
         } catch (error) {
           console.error("Ошибка при парсинге сообщения:", error);
@@ -56,6 +48,22 @@ export default function Chat() {
       };
     }
   }, [chatId, ws]);
+
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return;
+
+    const messageData = {
+      event: "createMessage",
+      data: {
+        chatId: chatId,
+        sender: userId,
+        content: newMessage,
+      },
+    };
+
+    ws?.send(JSON.stringify(messageData));
+    setNewMessage("");
+  };
 
   return (
     <div className="chat-container">
@@ -73,6 +81,7 @@ export default function Chat() {
             <div
               key={message.messageId}
               className={`message-item ${message.sender === userId ? "message-right" : "message-left"}`}
+              id={`m${message.messageId}`}
             >
               <p>{message.content}</p>
               <span>{new Date(message.timestamp).toLocaleString()}</span>
@@ -88,6 +97,7 @@ export default function Chat() {
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Введите сообщение..."
         />
+        <button onClick={handleSendMessage}>Отправить</button>
       </div>
     </div>
   );

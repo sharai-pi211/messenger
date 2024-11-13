@@ -68,3 +68,11 @@
   background-color: var(--lg);
   margin-bottom: 10px;
 }
+
+.empty-chat{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
