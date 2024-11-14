@@ -40,6 +40,8 @@
   margin: 5px 0;
   border-radius: 10px;
   max-width: 60%;
+  display: flex;
+  flex-direction: column;
 }
 
 .message-left {
@@ -94,4 +96,47 @@
   cursor: pointer;
   border: none;
   flex-grow: 1;
+}
+
+.message-item img {
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: cover;
+}
+
+.file-attachment-icon {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  padding: 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 15px;
+  font-size: 16px;
+  background-color: var(--lg);
+}
+
+.file-attachment-icon:hover {
+  background-color:  #f1f1f1;
+}
+
+.file-attachment-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.file-attachment-indicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: black;
+  color: #fff;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
+  font-weight: bold;
 }

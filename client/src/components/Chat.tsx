@@ -23,6 +23,7 @@ export default function Chat() {
   const ws = useWebSocket();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -41,7 +42,10 @@ export default function Chat() {
           const response = JSON.parse(event.data);
           if (response.event === "chatMessages") {
             setMessages(response.data || []);
-          } else if (response.event === "newMessage" && response.data.conversation_id === chatId) {
+          } else if (
+            response.event === "newMessage" &&
+            response.data.conversation_id === chatId
+          ) {
             setMessages((prevMessages) => [...prevMessages, response.data]);
           }
         } catch (error) {
@@ -68,6 +72,9 @@ export default function Chat() {
         };
         ws?.send(JSON.stringify(messageData));
         setSelectedFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
       };
       reader.readAsDataURL(selectedFile);
     } else {
@@ -93,9 +100,16 @@ export default function Chat() {
 
       <div className="messages-list">
         {messages.map((message) => (
-          <div key={message.messageId} className={`message-item ${message.sender === userId ? "message-right" : "message-left"}`}>
+          <div
+            key={message.messageId}
+            className={`message-item ${message.sender === userId ? "message-right" : "message-left"}`}
+          >
             {message.type === "image" ? (
-              <img src={message.content} alt="Изображение" className="message-image" />
+              <img
+                src={message.content}
+                alt="Изображение"
+                className="message-image"
+              />
             ) : (
               <p>{message.content}</p>
             )}
@@ -117,7 +131,43 @@ export default function Chat() {
             }
           }}
         />
-        <input type="file" accept="image/*" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+
+        <div
+          className="file-attachment-container"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <img
+            src="/clip.svg"
+            alt="Прикрепить файл"
+            className="file-attachment-icon"
+          />
+
+          {selectedFile && <div className="file-attachment-indicator">1</div>}
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0] || null;
+            const MAX_FILE_SIZE_MB = 10;
+            const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+            if (file && file.size > MAX_FILE_SIZE_BYTES) {
+              alert(
+                `Файл слишком большой! Максимальный размер: ${MAX_FILE_SIZE_MB} МБ.`
+              );
+              if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+              }
+              return;
+            }
+
+            setSelectedFile(file);
+          }}
+        />
         <button className="m-send" onClick={handleSendMessage}>
           ➜
         </button>
