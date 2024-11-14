@@ -1,4 +1,3 @@
-// Контроллер для управления пользователями
 import User from "../models/User.js";
 import { compare } from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -23,7 +22,6 @@ export async function login(username, password) {
   }
 }
 
-// Получение информации о пользователе
 export async function getUserInfo(userId) {
   try {
     const user = await User.findById(userId);
@@ -37,13 +35,12 @@ export async function getUserInfo(userId) {
   }
 }
 
-// Обновление информации о пользователе
 export async function updateUser(userId, username, email) {
   try {
     const user = await User.findByIdAndUpdate(
       userId,
       { $set: { username, email } },
-      { new: true },
+      { new: true }
     );
     if (!user) {
       throw new Error("Пользователь не найден");
@@ -70,7 +67,10 @@ export async function deleteUser(userId) {
 
 export async function getAllUsers() {
   try {
-    const users = await User.find({}, "_id username status avatarUrl lastActive");
+    const users = await User.find(
+      {},
+      "_id username status avatarUrl lastActive"
+    );
 
     if (!users.length) {
       throw new Error("Пользователи не найдены");
@@ -88,5 +88,23 @@ export async function getAllUsers() {
   } catch (error) {
     console.error("Ошибка при получении списка пользователей:", error);
     throw error;
+  }
+}
+
+export async function updateUserStatus(userId, status) {
+  try {
+    const validStatuses = ["online", "offline"];
+    if (!validStatuses.includes(status)) {
+      throw new Error("Недопустимый статус пользователя");
+    }
+
+    await User.findByIdAndUpdate(userId, {
+      status,
+      lastActive: new Date(),
+    });
+
+    console.log(`Статус пользователя ${userId} обновлён на: ${status}`);
+  } catch (error) {
+    console.error("Ошибка при обновлении статуса пользователя:", error);
   }
 }
