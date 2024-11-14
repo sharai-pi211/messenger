@@ -1,3 +1,4 @@
+import { ListCollectionsCursor } from "mongodb";
 import Chat from "../models/Chats.js";
 import Message from "../models/Message.js";
 
@@ -67,27 +68,28 @@ export async function getChatMessages(chatId) {
 }
 
 export async function createMessage(chatId, sender, content, wss) {
-  console.log("userId", sender);
-  const message = new Message({
+
+  const type = content.startsWith("data:image/") ? "image" : "text";
+
+  const messageData = {
     content,
     sender: sender,
     timestamp: new Date(),
     read: false,
-    type: "text",
-    media_URL: null,
+    type: type,
+    media_URL: type === "image" ? content : null,
     is_deleted: false,
     deleted_by: null,
     conversation_id: chatId,
-  });
+  };
 
-  console.log("message", message);
+  const message = new Message(messageData);
 
   try {
     await message.save();
     const chat = await Chat.findById(chatId);
-    if (!chat) {
-      throw new Error("Чат не найден");
-    }
+    if (!chat) throw new Error("Чат не найден");
+
     chat.messages.push(message._id);
     await chat.save();
 
@@ -97,22 +99,15 @@ export async function createMessage(chatId, sender, content, wss) {
       sender: message.sender,
       timestamp: message.timestamp,
       conversation_id: chatId,
+      type: message.type,
+      media_URL: message.media_URL,
     };
-
-    console.log("formattedMessage", formattedMessage);
 
     wss.clients.forEach((client) => {
       if (client.readyState === client.OPEN) {
-        client.send(
-          JSON.stringify({
-            event: "newMessage",
-            data: formattedMessage,
-          })
-        );
+        client.send(JSON.stringify({ event: "newMessage", data: formattedMessage }));
       }
     });
-
-    console.log(message);
 
     return message;
   } catch (error) {
