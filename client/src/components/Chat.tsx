@@ -8,12 +8,15 @@ interface Message {
   content: string;
   sender: string;
   timestamp: string;
+  type: string;
+  media_URL?: string;
 }
 
 export default function Chat() {
   const { chatId } = useParams<{ chatId: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState<string>("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const userId = localStorage.getItem("userId");
   const location = useLocation();
   const chatPartner = location.state?.chatPartnerName || "Собеседник";
@@ -31,29 +34,15 @@ export default function Chat() {
 
   useEffect(() => {
     if (chatId && ws && ws.readyState === WebSocket.OPEN) {
-      console.log(
-        `Открыт чат с ID: ${chatId}, отправляем запрос на получение сообщений`,
-      );
-
       ws.send(JSON.stringify({ event: "getChatMessages", data: chatId }));
 
       ws.onmessage = (event) => {
         try {
           const response = JSON.parse(event.data);
-          console.log("Полученные данные:", response);
-
           if (response.event === "chatMessages") {
             setMessages(response.data || []);
-          } else if (
-            response.event === "newMessage" &&
-            response.data.conversation_id === chatId
-          ) {
+          } else if (response.event === "newMessage" && response.data.conversation_id === chatId) {
             setMessages((prevMessages) => [...prevMessages, response.data]);
-          } else if (response.event === "error") {
-            console.error(
-              "Ошибка при получении сообщений чата:",
-              response.message,
-            );
           }
         } catch (error) {
           console.error("Ошибка при парсинге сообщения:", error);
@@ -63,19 +52,37 @@ export default function Chat() {
   }, [chatId, ws]);
 
   const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !selectedFile) return;
 
-    const messageData = {
-      event: "createMessage",
-      data: {
-        chatId: chatId,
-        sender: userId,
-        content: newMessage,
-      },
-    };
-
-    ws?.send(JSON.stringify(messageData));
-    setNewMessage("");
+    if (selectedFile) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const messageData = {
+          event: "createMessage",
+          data: {
+            chatId,
+            sender: userId,
+            type: "image",
+            content: reader.result,
+          },
+        };
+        ws?.send(JSON.stringify(messageData));
+        setSelectedFile(null);
+      };
+      reader.readAsDataURL(selectedFile);
+    } else {
+      const messageData = {
+        event: "createMessage",
+        data: {
+          chatId,
+          sender: userId,
+          type: "text",
+          content: newMessage,
+        },
+      };
+      ws?.send(JSON.stringify(messageData));
+      setNewMessage("");
+    }
   };
 
   return (
@@ -84,24 +91,19 @@ export default function Chat() {
         <h2>{chatPartner}</h2>
       </div>
 
-      {messages.length === 0 ? (
-        <div className="empty-chat">
-          <p>Здесь пока нет сообщений. Начните беседу!</p>
-        </div>
-      ) : (
-        <div className="messages-list">
-          {messages.map((message) => (
-            <div
-              key={message.messageId}
-              className={`message-item ${message.sender === userId ? "message-right" : "message-left"}`}
-            >
+      <div className="messages-list">
+        {messages.map((message) => (
+          <div key={message.messageId} className={`message-item ${message.sender === userId ? "message-right" : "message-left"}`}>
+            {message.type === "image" ? (
+              <img src={message.content} alt="Изображение" className="message-image" />
+            ) : (
               <p>{message.content}</p>
-              <span>{new Date(message.timestamp).toLocaleString()}</span>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-      )}
+            )}
+            <span>{new Date(message.timestamp).toLocaleString()}</span>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
 
       <div className="message-input">
         <input
@@ -115,6 +117,7 @@ export default function Chat() {
             }
           }}
         />
+        <input type="file" accept="image/*" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
         <button className="m-send" onClick={handleSendMessage}>
           ➜
         </button>
