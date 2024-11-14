@@ -37,7 +37,7 @@ export default function ChatsList() {
     if (!ws) {
       return;
     }
-
+  
     if (ws.readyState === WebSocket.OPEN) {
       fetchChats();
     } else {
@@ -45,18 +45,18 @@ export default function ChatsList() {
         fetchChats();
       };
     }
-
+  
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
-
+  
         if (message.event === "userChats") {
           const formattedData = message.data.map((chat: any) => {
             const userId = localStorage.getItem("userId");
             const otherParticipant = chat.participants.find(
               (participant: any) => participant._id !== userId,
             );
-
+  
             return {
               chatId: chat._id,
               userId: otherParticipant._id,
@@ -66,24 +66,43 @@ export default function ChatsList() {
               lastActive: otherParticipant.lastActive || "",
             };
           });
-
+  
           setChats(formattedData);
           setFilteredChats(formattedData);
           setLoading(false);
+        } else if (message.event === "userStatus") {
+          console.log("Статус пользователей:", message.data);
+          const updatedChats = chats.map((chat) => {
+            const updatedUser = message.data.find((user: any) => user.userId === chat.userId);
+            if (updatedUser) {
+              return {
+                ...chat,
+                status: updatedUser.status,
+                lastActive: updatedUser.lastActive,
+              };
+            }
+            return chat;
+          });
+  
+          setChats(updatedChats);
+          setFilteredChats(updatedChats);
         } else if (message.event === "error") {
           setError(message.message);
           setLoading(false);
         }
-      } catch (error) {}
+      } catch (error) {
+        console.error("Ошибка при обработке сообщения:", error);
+      }
     };
-
+  
     return () => {
       if (ws) {
         ws.onopen = null;
         ws.onmessage = null;
       }
     };
-  }, [ws]);
+  }, [ws, chats]);
+  
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
@@ -126,6 +145,7 @@ export default function ChatsList() {
             <div
               key={chat.chatId}
               className="contact-item"
+              id={`chat-${chat.chatId}`}
               onClick={() => handleChatClick(chat.chatId, chat.username)}
             >
               <div className="avatar">
