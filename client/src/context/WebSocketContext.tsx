@@ -6,7 +6,9 @@ export const useWebSocket = () => {
   return useContext(WebSocketContext);
 };
 
-export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   useEffect(() => {
@@ -30,13 +32,13 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     return () => {
-      console.log("WebSocketProvider размонтируется, но соединение не закрывается");
+      console.log(
+        "WebSocketProvider размонтируется, но соединение не закрывается",
+      );
     };
   }, [ws]);
 
   return (
-    <WebSocketContext.Provider value={ws}>
-      {children}
-    </WebSocketContext.Provider>
+    <WebSocketContext.Provider value={ws}>{children}</WebSocketContext.Provider>
   );
 };

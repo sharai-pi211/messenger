@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import "../styles/Chat.css";
 import { useWebSocket } from "../context/WebSocketContext";
 import { useParams, useLocation } from "react-router-dom";
@@ -7,11 +7,7 @@ interface Message {
   messageId: string;
   content: string;
   sender: string;
-  recipientId: string;
   timestamp: string;
-  read: boolean;
-  type: string;
-  media_URL: string | null;
 }
 
 export default function Chat() {
@@ -23,10 +19,21 @@ export default function Chat() {
   const chatPartner = location.state?.chatPartnerName || "Собеседник";
   const ws = useWebSocket();
 
-  // Обработка получения сообщений
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   useEffect(() => {
     if (chatId && ws && ws.readyState === WebSocket.OPEN) {
-      console.log(`Открыт чат с ID: ${chatId}, отправляем запрос на получение сообщений`);
+      console.log(
+        `Открыт чат с ID: ${chatId}, отправляем запрос на получение сообщений`,
+      );
 
       ws.send(JSON.stringify({ event: "getChatMessages", data: chatId }));
 
@@ -37,10 +44,16 @@ export default function Chat() {
 
           if (response.event === "chatMessages") {
             setMessages(response.data || []);
-          } else if (response.event === "newMessage" && response.data.conversation_id === chatId) {
+          } else if (
+            response.event === "newMessage" &&
+            response.data.conversation_id === chatId
+          ) {
             setMessages((prevMessages) => [...prevMessages, response.data]);
           } else if (response.event === "error") {
-            console.error("Ошибка при получении сообщений чата:", response.message);
+            console.error(
+              "Ошибка при получении сообщений чата:",
+              response.message,
+            );
           }
         } catch (error) {
           console.error("Ошибка при парсинге сообщения:", error);
@@ -81,12 +94,12 @@ export default function Chat() {
             <div
               key={message.messageId}
               className={`message-item ${message.sender === userId ? "message-right" : "message-left"}`}
-              id={`m${message.messageId}`}
             >
               <p>{message.content}</p>
               <span>{new Date(message.timestamp).toLocaleString()}</span>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
       )}
 
@@ -96,8 +109,15 @@ export default function Chat() {
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Введите сообщение..."
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSendMessage();
+            }
+          }}
         />
-        <button onClick={handleSendMessage}>Отправить</button>
+        <button className="m-send" onClick={handleSendMessage}>
+          ➜
+        </button>
       </div>
     </div>
   );

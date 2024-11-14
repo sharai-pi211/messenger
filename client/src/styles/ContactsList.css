@@ -3,7 +3,6 @@
   width: 300px;
   background-color: var(--white);
   border-radius: 12px;
-  /* margin-left: 100px; */
 }
 
 .header {
@@ -45,6 +44,13 @@
   border-radius: 15px;
   font-size: 16px;
   background-color: var(--lg);
+  color: var(--black);
+}
+
+.search-bar input:focus {
+  border: 1px solid #c5c5c5;
+  outline: none;
+  box-shadow: none;
 }
 
 .contacts-list {
@@ -61,6 +67,7 @@
   padding: 10px 0;
   border-bottom: 1px solid #e0e0e0;
   transition: background-color 0.3s ease;
+  cursor: pointer;
 }
 
 .contact-item:hover {
@@ -126,9 +133,9 @@
 }
 
 .online {
-  background-color: #4caf50; 
+  background-color: #4caf50;
 }
 
 .offline {
-  background-color: #9e9e9e; 
+  background-color: #9e9e9e;
 }

@@ -6,11 +6,12 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Main from "./pages/Main";
-import Contact from "./components/Contact";
-import ContactsList from "./components/ChatsList";
 import ChatsList from "./components/ChatsList";
 import Chat from "./components/Chat";
 import { WebSocketProvider } from "./context/WebSocketContext";
+import { AuthProvider } from "./context/AuthContext";
+import PrivateRoute from "./context/PrivateRoute";
+import Me from "./pages/Me";
 
 const router = createBrowserRouter([
   {
@@ -19,11 +20,19 @@ const router = createBrowserRouter([
   },
   {
     path: "/chats",
-    element: <ChatsList />,
+    element: (
+      <PrivateRoute>
+        <ChatsList />
+      </PrivateRoute>
+    ),
     children: [
       {
         path: ":chatId",
-        element: <Chat />,
+        element: (
+          <PrivateRoute>
+            <Chat />
+          </PrivateRoute>
+        ),
       },
     ],
   },
@@ -35,24 +44,28 @@ const router = createBrowserRouter([
     path: "/sign-up",
     element: <SignUp />,
   },
-  // {
-  //   path: "contacts/:contactId",
-  //   element: <Contact />,
-  // },
+  {
+    path: "/me",
+    element: (
+      <PrivateRoute>
+        <Me />
+      </PrivateRoute>
+    ),
+  },
 ]);
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement,
 );
+
 root.render(
   <React.StrictMode>
-    <WebSocketProvider>
-    <RouterProvider router={router} />
-    </WebSocketProvider>
+    <AuthProvider>
+      <WebSocketProvider>
+        <RouterProvider router={router} />
+      </WebSocketProvider>
+    </AuthProvider>
   </React.StrictMode>,
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();

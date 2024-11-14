@@ -32,7 +32,7 @@ export default function AddContactModal({ onClose }: AddContactModalProps) {
   };
 
   const filteredContacts = contacts.filter((contact) =>
-    contact.username.toLowerCase().includes(searchQuery)
+    contact.username.toLowerCase().includes(searchQuery),
   );
 
   useEffect(() => {

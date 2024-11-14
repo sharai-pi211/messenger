@@ -11,12 +11,14 @@ li {
   margin: 0;
   padding: 0;
 }
+
 .navbar ul {
   list-style-type: none;
   margin: 10px 20px;
   padding: 0;
   display: flex;
   flex-direction: column;
+  height: 97%;
 }
 
 .nav-item img {
@@ -38,4 +40,23 @@ li {
   border: none;
   cursor: pointer;
   background-color: transparent;
+}
+
+#p-last {
+  align-self: start;
+  margin-top: auto;
+}
+
+.nav-icon {
+  width: 24px;
+  height: 24px;
+  filter: var(--icon-filter);
+}
+
+[data-theme="light"] .nav-icon {
+  --icon-filter: invert(0%);
+}
+
+[data-theme="dark"] .nav-icon {
+  --icon-filter: invert(100%);
 }

@@ -29,40 +29,32 @@ export default function ChatsList() {
     const userId = localStorage.getItem("userId");
 
     if (userId && ws && ws.readyState === WebSocket.OPEN) {
-      
       ws.send(JSON.stringify({ event: "getUserChats", data: userId }));
     }
   };
 
   useEffect(() => {
     if (!ws) {
-      
       return;
     }
-  
-    // Проверяем состояние WebSocket перед отправкой
+
     if (ws.readyState === WebSocket.OPEN) {
       fetchChats();
     } else {
-      
       ws.onopen = () => {
-        
         fetchChats();
       };
     }
-  
-    // Обработчик сообщений WebSocket
+
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
-        
-  
+
         if (message.event === "userChats") {
-          
           const formattedData = message.data.map((chat: any) => {
             const userId = localStorage.getItem("userId");
             const otherParticipant = chat.participants.find(
-              (participant: any) => participant._id !== userId
+              (participant: any) => participant._id !== userId,
             );
 
             return {
@@ -78,20 +70,13 @@ export default function ChatsList() {
           setChats(formattedData);
           setFilteredChats(formattedData);
           setLoading(false);
-          // setChats(message.data);
-          // setFilteredChats(message.data);
-          // setLoading(false);
         } else if (message.event === "error") {
-          
           setError(message.message);
           setLoading(false);
         }
-      } catch (error) {
-        
-      }
+      } catch (error) {}
     };
-  
-    // Очистка обработчиков при размонтировании
+
     return () => {
       if (ws) {
         ws.onopen = null;
@@ -99,15 +84,13 @@ export default function ChatsList() {
       }
     };
   }, [ws]);
-  
-
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
 
     const filtered = chats.filter((chat) =>
-      chat.username.toLowerCase().includes(query)
+      chat.username.toLowerCase().includes(query),
     );
     setFilteredChats(filtered);
   };
@@ -116,7 +99,6 @@ export default function ChatsList() {
     console.log(`Нажат чат ${chatId}, собеседник: ${chatPartnerName}`);
     navigate(`/chats/${chatId}`, { state: { chatPartnerName } });
   };
-  
 
   return (
     <div className="row">
@@ -124,7 +106,10 @@ export default function ChatsList() {
       <div className="contacts-container">
         <div className="header">
           <h1>Chats</h1>
-          <button className="add-contact-button" onClick={() => setIsModalOpen(true)}>
+          <button
+            className="add-contact-button"
+            onClick={() => setIsModalOpen(true)}
+          >
             +
           </button>
         </div>
@@ -138,19 +123,29 @@ export default function ChatsList() {
             />
           </div>
           {filteredChats.map((chat) => (
-            <div key={chat.chatId} className="contact-item" onClick={() => handleChatClick(chat.chatId, chat.username)}>
+            <div
+              key={chat.chatId}
+              className="contact-item"
+              onClick={() => handleChatClick(chat.chatId, chat.username)}
+            >
               <div className="avatar">
                 {chat.avatarUrl ? (
                   <img src={chat.avatarUrl} alt={chat.username} />
                 ) : (
-                  <div className="default-avatar">{chat.username.charAt(0)}</div>
+                  <div className="default-avatar">
+                    {chat.username.charAt(0)}
+                  </div>
                 )}
-                <span className={`status-indicator ${chat.status === "online" ? "online" : "offline"}`}></span>
+                <span
+                  className={`status-indicator ${chat.status === "online" ? "online" : "offline"}`}
+                ></span>
               </div>
               <div className="contact-info">
                 <p className="contact-name">{chat.username}</p>
                 {chat.status !== "online" && (
-                  <p className="contact-last-active">Last active: {formatLastActive(chat.lastActive)}</p>
+                  <p className="contact-last-active">
+                    Last active: {formatLastActive(chat.lastActive)}
+                  </p>
                 )}
               </div>
             </div>

@@ -1,51 +1,16 @@
-// import '../styles/Panel.css'
-
-// import { Link } from 'react-router-dom'
-
-// export default function Panel() {
-//   return (
-//     <nav className="navbar">
-//     <ul className="nav-list">
-//       <li className="nav-item">
-//         <Link to="/" className="nav-link" title="Home">
-//           <img src="/home.svg" alt="Home" className="nav-icon" />
-//         </Link>
-//       </li>
-//       <li className="nav-item">
-//         <Link to="/contacts" className="nav-link" title="Contacts">
-//           <img src="/contacts.svg" alt="Contacts" className="nav-icon" />
-//         </Link>
-//       </li>
-//       <li className="nav-item">
-//         <Link to="/#" className="nav-link" title="Messages">
-//           <img src="/messages.svg" alt="Messages" className="nav-icon" />
-//         </Link>
-//       </li>
-//       <li className="nav-item last">
-//         <Link to="/#" className="nav-link" title="My">
-//           <img src="/user.svg" alt="My acc" className="nav-icon" />
-//         </Link>
-//       </li>
-//     </ul>
-//   </nav>
-//   )
-// }
-
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../styles/Panel.css";
 
 export default function Panel() {
-  const [theme, setTheme] = useState("light"); // Начальное состояние темы
+  const [theme, setTheme] = useState("light");
 
-  // Функция для переключения темы
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
-    document.documentElement.setAttribute("data-theme", newTheme); // Меняем атрибут для применения стилей
+    document.documentElement.setAttribute("data-theme", newTheme);
   };
 
-  // Сохранение темы в localStorage
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme) {
@@ -76,8 +41,8 @@ export default function Panel() {
             <img src="/messages.svg" alt="Messages" className="nav-icon" />
           </Link>
         </li>
-        <li className="nav-item last">
-          <Link to="/#" className="nav-link" title="My">
+        <li className="nav-item last" id="p-last">
+          <Link to="/me" className="nav-link" title="Me">
             <img src="/user.svg" alt="My acc" className="nav-icon" />
           </Link>
         </li>
@@ -90,7 +55,7 @@ export default function Panel() {
                   ? "Switch to dark theme"
                   : "Switch to light theme"
               }
-              className="theme-icon"
+              className="theme-icon nav-icon"
             />
           </button>
         </li>

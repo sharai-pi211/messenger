@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/SignInUp.css";
+import { useAuth } from "../context/AuthContext";
 
 export default function SignIn() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSignIn = async () => {
     try {
@@ -30,6 +32,8 @@ export default function SignIn() {
           localStorage.setItem("token", data.token);
           localStorage.setItem("username", data.username);
           localStorage.setItem("userId", data.userId);
+
+          login(data.token);
 
           navigate("/chats");
         } else {
