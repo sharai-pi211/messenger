@@ -140,3 +140,105 @@
   font-size: 12px;
   font-weight: bold;
 }
+
+.file-attachment-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.file-attachment-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.file-attachment-indicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #ff3b30;
+  color: #fff;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.preview-container {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.image-preview {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+    position: relative;
+    display: inline-block;
+}
+
+.remove-button {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #ff3b30;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+}
+
+.preview-container {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.image-preview-container {
+  position: relative;
+  display: inline-block;
+}
+
+.image-preview {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.remove-button {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #ff3b30;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+}
+
+.remove-button:hover {
+  background-color: #ff1a1a;
+}
