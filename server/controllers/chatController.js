@@ -66,18 +66,18 @@ export async function getChatMessages(chatId) {
     throw error;
   }
 }
+export async function createMessage(chatId, sender, content, wss, type = "text") {
+  console.log("userId", sender);
 
-export async function createMessage(chatId, sender, content, wss) {
-
-  const type = content.startsWith("data:image/") ? "image" : "text";
+  const messageType = Array.isArray(content) && content.length > 0 ? "image" : type;
 
   const messageData = {
     content,
     sender: sender,
     timestamp: new Date(),
     read: false,
-    type: type,
-    media_URL: type === "image" ? content : null,
+    type: messageType,
+    media_URL: messageType === "image" ? content : [],
     is_deleted: false,
     deleted_by: null,
     conversation_id: chatId,

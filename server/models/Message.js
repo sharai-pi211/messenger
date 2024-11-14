@@ -4,14 +4,14 @@ const Schema = _Schema;
 
 const messageSchema = new Schema(
   {
-    content: { type: String, required: true },
+    content: { type: [String], required: true }, 
     sender: { type: _Schema.Types.ObjectId, ref: "User", required: false },
     recipient: { type: _Schema.Types.ObjectId, ref: "User", required: false },
-    conversation_id: { type: _Schema.Types.ObjectId, ref: "Chat", required: true }, // Добавлено поле
+    conversation_id: { type: _Schema.Types.ObjectId, ref: "Chat", required: true },
     timestamp: { type: Date, default: Date.now },
     read: { type: Boolean, default: false },
-    type: { type: String, enum: ["text", "image", "video"], default: "text" },
-    media_URL: { type: String, default: null },
+    type: { type: String, enum: ["text", "image"], default: "text" },
+    media_URL: { type: [String], default: [] }, 
     is_deleted: { type: Boolean, default: false },
     deleted_by: { type: _Schema.Types.ObjectId, ref: "User", default: null },
   },
