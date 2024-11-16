@@ -20,7 +20,6 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState<string>("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [isListening, setIsListening] = useState<boolean>(false);
   const userId = localStorage.getItem("userId");
   const location = useLocation();
   const chatPartner = location.state?.chatPartnerName || "Собеседник";
@@ -62,7 +61,6 @@ export default function Chat() {
     } else {
       SpeechRecognition.startListening({ continuous: true, language: "ru-RU" });
     }
-    setIsListening(!listening);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,6 +159,10 @@ export default function Chat() {
   const handleSendMessage = () => {
     if (!newMessage.trim() && selectedFiles.length === 0) return;
 
+    if (listening) {
+      SpeechRecognition.stopListening();
+    }
+
     if (selectedFiles.length > 0) {
       const readerPromises = selectedFiles.map((file) => {
         return new Promise<string>((resolve) => {
@@ -240,67 +242,66 @@ export default function Chat() {
       </div>
 
       <div className="input-cont">
-
-      <div className="message-input">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Введите сообщение..."
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleSendMessage();
-            }
-          }}
-        />
-
-        <div className="buttons-cont">
-          <div
-            className="file-attachment-container"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <img
-              src="/clip.svg"
-              alt="Прикрепить файл"
-              className="file-attachment-icon"
-            />
-            {selectedFiles.length > 0 && (
-              <div className="file-attachment-indicator">
-                {selectedFiles.length}
-              </div>
-            )}
-          </div>
-
+        <div className="message-input">
           <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            style={{ display: "none" }}
-            onChange={handleFileChange}
-          />
-
-          <button
-            className={`mic file-attachment-container ${isListening ? "listening" : ""}`}
-            onClick={handleVoiceInput}
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Введите сообщение..."
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleSendMessage();
               }
             }}
-          >
-            <img
-              src={isListening ? "/mic-f.svg" : "/mic.svg"}
-              alt={isListening ? "Микрофон включен" : "Микрофон выключен"}
-              className="file-attachment-icon mic-icon"
+          />
+
+          <div className="buttons-cont">
+            <div
+              className="file-attachment-container"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <img
+                src="/clip.svg"
+                alt="Прикрепить файл"
+                className="file-attachment-icon"
+              />
+              {selectedFiles.length > 0 && (
+                <div className="file-attachment-indicator">
+                  {selectedFiles.length}
+                </div>
+              )}
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={handleFileChange}
             />
-          </button>
 
-          <button className="m-send" onClick={handleSendMessage}>
-            <img src={"/send.svg"} alt={"Отправить"} className="send-icon" />
-          </button>
-        </div>
+            <button
+              className={`mic file-attachment-container ${listening ? "listening" : ""}`}
+              onClick={handleVoiceInput}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSendMessage();
+                  SpeechRecognition.stopListening();
+                }
+              }}
+            >
+              <img
+                src={listening ? "/mic-f.svg" : "/mic.svg"}
+                alt={listening ? "Микрофон включен" : "Микрофон выключен"}
+                className="file-attachment-icon mic-icon"
+              />
+            </button>
 
+            <button className="m-send" onClick={handleSendMessage}>
+              <img src={"/send.svg"} alt={"Отправить"} className="send-icon" />
+            </button>
+          </div>
         </div>
         {selectedFiles.length > 0 && (
           <div className="preview-container">
