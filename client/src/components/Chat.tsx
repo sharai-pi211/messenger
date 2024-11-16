@@ -2,6 +2,9 @@ import { useEffect, useState, useRef } from "react";
 import "../styles/Chat.css";
 import { useWebSocket } from "../context/WebSocketContext";
 import { useParams, useLocation } from "react-router-dom";
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
 
 interface Message {
   messageId: string;
@@ -17,6 +20,7 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState<string>("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isListening, setIsListening] = useState<boolean>(false);
   const userId = localStorage.getItem("userId");
   const location = useLocation();
   const chatPartner = location.state?.chatPartnerName || "Собеседник";
@@ -26,19 +30,46 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+  } = useSpeechRecognition();
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    if (transcript) {
+      setNewMessage(transcript);
+    }
+  }, [transcript]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleVoiceInput = () => {
+    if (!browserSupportsSpeechRecognition) {
+      alert("Ваш браузер не поддерживает голосовой ввод.");
+      return;
+    }
+
+    if (listening) {
+      SpeechRecognition.stopListening();
+    } else {
+      SpeechRecognition.startListening({ continuous: true, language: "ru-RU" });
+    }
+    setIsListening(!listening);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const newFiles: File[] = [];
     let totalSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
-  
+
     const resizeImage = (file: File): Promise<File> => {
       return new Promise((resolve) => {
         const reader = new FileReader();
@@ -50,10 +81,10 @@ export default function Chat() {
             const ctx = canvas.getContext("2d");
             const MAX_WIDTH = 800;
             const scale = MAX_WIDTH / img.width;
-  
+
             canvas.width = MAX_WIDTH;
             canvas.height = img.height * scale;
-  
+
             ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
             canvas.toBlob((blob) => {
               const resizedFile = new File([blob!], file.name, {
@@ -66,32 +97,35 @@ export default function Chat() {
         reader.readAsDataURL(file);
       });
     };
-  
+
     const processFiles = async () => {
       for (const file of files) {
         const fileSizeMB = file.size / (1024 * 1024);
-  
+
         if (fileSizeMB > MAX_FILE_SIZE_MB) {
-          alert(`Файл "${file.name}" слишком большой (${fileSizeMB.toFixed(2)} МБ). Максимальный размер: ${MAX_FILE_SIZE_MB} МБ.`);
+          alert(
+            `Файл "${file.name}" слишком большой (${fileSizeMB.toFixed(2)} МБ). Максимальный размер: ${MAX_FILE_SIZE_MB} МБ.`
+          );
           continue;
         }
-  
+
         totalSize += file.size;
         if (totalSize / (1024 * 1024) > MAX_FILE_SIZE_MB) {
-          alert(`Превышен общий лимит загрузки файлов (${(totalSize / (1024 * 1024)).toFixed(2)} МБ). Максимальный общий размер: ${MAX_FILE_SIZE_MB} МБ.`);
+          alert(
+            `Превышен общий лимит загрузки файлов (${(totalSize / (1024 * 1024)).toFixed(2)} МБ). Максимальный общий размер: ${MAX_FILE_SIZE_MB} МБ.`
+          );
           break;
         }
-  
+
         const resizedFile = await resizeImage(file);
         newFiles.push(resizedFile);
       }
-  
+
       setSelectedFiles((prevFiles) => [...prevFiles, ...newFiles]);
     };
-  
+
     processFiles();
   };
-  
 
   const handleRemoveFile = (index: number) => {
     setSelectedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
@@ -140,7 +174,7 @@ export default function Chat() {
         const messageData = {
           event: "createMessage",
           data: {
-            chatId, 
+            chatId,
             sender: userId,
             type: "image",
             content: base64Images,
@@ -165,43 +199,49 @@ export default function Chat() {
       };
       ws?.send(JSON.stringify(messageData));
       setNewMessage("");
+      resetTranscript();
     }
   };
 
-
   return (
     <div className="chat-container">
-    <div className="chat-header">
-      <h2>{chatPartner}</h2>
-    </div>
+      <div className="chat-header">
+        <h2>{chatPartner}</h2>
+      </div>
 
-    <div className="messages-list">
-      {messages.map((message) => (
-    <div
-      key={message.messageId}
-      className={`message-item ${message.sender === userId ? "message-right" : "message-left"}`}
-    >
-      {message.type === "image" && Array.isArray(message.content) ? (
-        message.content.map((imageSrc, index) => (
-          <img
-            key={index}
-            src={imageSrc}
-            alt={`Изображение ${index + 1}`}
-            className="message-image"
-          />
-        ))
-      ) : message.type === "image" ? (
-        <img src={message.content} alt="Изображение" className="message-image" />
-      ) : (
-        <p>{message.content}</p>
-      )}
-      <span>{new Date(message.timestamp).toLocaleString()}</span>
-    </div>
-  ))}
-      <div ref={messagesEndRef} />
-    </div>
+      <div className="messages-list">
+        {messages.map((message) => (
+          <div
+            key={message.messageId}
+            className={`message-item ${message.sender === userId ? "message-right" : "message-left"}`}
+          >
+            {message.type === "image" && Array.isArray(message.content) ? (
+              message.content.map((imageSrc, index) => (
+                <img
+                  key={index}
+                  src={imageSrc}
+                  alt={`Изображение ${index + 1}`}
+                  className="message-image"
+                />
+              ))
+            ) : message.type === "image" ? (
+              <img
+                src={message.content}
+                alt="Изображение"
+                className="message-image"
+              />
+            ) : (
+              <p>{message.content}</p>
+            )}
+            <span>{new Date(message.timestamp).toLocaleString()}</span>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
 
-    <div className="message-input">
+      <div className="input-cont">
+
+      <div className="message-input">
         <input
           type="text"
           value={newMessage}
@@ -214,43 +254,74 @@ export default function Chat() {
           }}
         />
 
-      <div className="file-attachment-container" onClick={() => fileInputRef.current?.click()}>
-        <img src="/clip.svg" alt="Прикрепить файл" className="file-attachment-icon" />
+        <div className="buttons-cont">
+          <div
+            className="file-attachment-container"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <img
+              src="/clip.svg"
+              alt="Прикрепить файл"
+              className="file-attachment-icon"
+            />
+            {selectedFiles.length > 0 && (
+              <div className="file-attachment-indicator">
+                {selectedFiles.length}
+              </div>
+            )}
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            style={{ display: "none" }}
+            onChange={handleFileChange}
+          />
+
+          <button
+            className={`mic file-attachment-container ${isListening ? "listening" : ""}`}
+            onClick={handleVoiceInput}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSendMessage();
+              }
+            }}
+          >
+            <img
+              src={isListening ? "/mic-f.svg" : "/mic.svg"}
+              alt={isListening ? "Микрофон включен" : "Микрофон выключен"}
+              className="file-attachment-icon mic-icon"
+            />
+          </button>
+
+          <button className="m-send" onClick={handleSendMessage}>
+            <img src={"/send.svg"} alt={"Отправить"} className="send-icon" />
+          </button>
+        </div>
+
+        </div>
         {selectedFiles.length > 0 && (
-          <div className="file-attachment-indicator">{selectedFiles.length}</div>
+          <div className="preview-container">
+            {selectedFiles.map((file, index) => (
+              <div key={index} className="image-preview-container">
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt={`preview-${index}`}
+                  className="image-preview"
+                />
+                <button
+                  className="remove-button"
+                  onClick={() => handleRemoveFile(index)}
+                >
+                  ✖
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        style={{ display: "none" }}
-        onChange={handleFileChange}
-      />
-
-      <button className="m-send" onClick={handleSendMessage}>
-        ➜
-      </button>
-
-      {selectedFiles.length > 0 && (
-        <div className="preview-container">
-          {selectedFiles.map((file, index) => (
-            <div key={index} className="image-preview-container">
-              <img
-                src={URL.createObjectURL(file)}
-                alt={`preview-${index}`}
-                className="image-preview"
-              />
-              <button className="remove-button" onClick={() => handleRemoveFile(index)}>
-                ✖
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
     </div>
   );
 }

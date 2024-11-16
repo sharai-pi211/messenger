@@ -23,10 +23,12 @@ html {
   --white: #ffffff;
   --lg: #f8f9fa;
   --dg: #ecf0f1;
+  --hover: #f1f1f1;
 }
 
 [data-theme="dark"] {
   --black: #ffffff;
   --white: #171717;
   --lg: #191d20;
+  --hover: #222222;
 }
