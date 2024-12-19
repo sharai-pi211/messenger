@@ -1,72 +1,83 @@
-import React from "react";
-import { Form } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Form, useParams } from "react-router-dom";
 import "../styles/Contact.css";
 
 interface Contact {
-  first: string;
-  last: string;
-  avatar: string;
-  twitter?: string;
-  notes?: string;
-  favorite: boolean;
-  id?: string;
+  _id: string;
+  username: string;
+  email: string;
+  avatarUrl?: string;
+  status: string;
+  lastActive?: string;
 }
 
 export default function Contact() {
-  const contact: Contact = {
-    first: "Your",
-    last: "Name",
-    avatar: "https://robohash.org/you.png?size=200x200",
-    notes: "Some notes",
-    favorite: true,
-  };
+  const { contactId } = useParams<{ contactId: string }>();
+  const [contact, setContact] = useState<Contact | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch contact information
+  useEffect(() => {
+    const fetchContact = async () => {
+      if (!contactId) return;
+
+      try {
+        const response = await fetch(`http://localhost:3000/api/users/${contactId}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch contact");
+        }
+
+        const data = await response.json();
+        setContact(data);
+      } catch (error) {
+        console.error("Ошибка при получении пользователя:", error);
+        setError("Ошибка при загрузке информации о контакте");
+      }
+    };
+
+    fetchContact();
+  }, [contactId]);
+
+  if (error) {
+    return <div className="error">{error}</div>;
+  }
+
+  if (!contact) {
+    return <div className="loading">Loading contact...</div>;
+  }
 
   return (
     <div id="contact" className="contact">
-      <div>
+      <div className="contact-header">
         <img
-          key={contact.avatar}
           src={
-            contact.avatar ||
-            `https://robohash.org/${contact.id}.png?size=200x200`
+            contact.avatarUrl ||
+            `https://robohash.org/${contact._id}.png?size=200x200`
           }
-          alt={`${contact.first} ${contact.last}`}
+          alt={contact.username}
+          className="contact-avatar"
         />
+        <div className="contact-info">
+          <h1>{contact.username}</h1>
+          <p>Email: {contact.email}</p>
+          <p>Status: {contact.status}</p>
+          {contact.lastActive && (
+            <p>Last Active: {new Date(contact.lastActive).toLocaleString()}</p>
+          )}
+        </div>
       </div>
 
-      <div>
-        <h1>
-          {contact.first || contact.last ? (
-            <>
-              {contact.first} {contact.last}
-            </>
-          ) : (
-            <i>No Name</i>
-          )}{" "}
-        </h1>
-
-        {contact.twitter && (
-          <p>
-            <a
-              target="_blank"
-              href={`https://twitter.com/${contact.twitter}`}
-              rel="noopener noreferrer"
-            >
-              {contact.twitter}
-            </a>
-          </p>
-        )}
-
-        {contact.notes && <p>{contact.notes}</p>}
-
-        <div>
-          <Form action="edit">
-            <button type="submit">Edit</button>
-          </Form>
-          <Form method="post" action="destroy">
-            <button type="submit">Delete</button>
-          </Form>
-        </div>
+      <div className="contact-actions">
+        <Form action="edit">
+          <button type="submit" className="edit-button">
+            Edit
+          </button>
+        </Form>
+        <Form method="post" action="destroy">
+          <button type="submit" className="delete-button">
+            Delete
+          </button>
+        </Form>
       </div>
     </div>
   );

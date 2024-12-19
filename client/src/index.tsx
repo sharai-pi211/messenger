@@ -12,6 +12,8 @@ import { WebSocketProvider } from "./context/WebSocketContext";
 import { AuthProvider } from "./context/AuthContext";
 import PrivateRoute from "./context/PrivateRoute";
 import Me from "./pages/Me";
+import Contacts from "./pages/Contacts";
+import Contact from "./components/Contact";
 
 const router = createBrowserRouter([
   {
@@ -51,6 +53,24 @@ const router = createBrowserRouter([
         <Me />
       </PrivateRoute>
     ),
+  },
+  {
+    path: "/contacts",
+    element: (
+      <PrivateRoute>
+        <Contacts />
+      </PrivateRoute>
+    ),
+    children: [
+      {
+        path: ":contactId",
+        element: (
+          <PrivateRoute>
+            <Contact />
+          </PrivateRoute>
+        ),
+      },
+    ],
   },
 ]);
 

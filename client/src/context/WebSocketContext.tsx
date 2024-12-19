@@ -38,7 +38,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
       socket.onmessage = (event) => {
         const message = JSON.parse(event.data);
         if (message.event === "userStatus") {
-          console.log("Статус пользователей:", message.data);
+          console.log("Статус пользователей был запрошен устала миллиард таскать");
         }
       };
 
