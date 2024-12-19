@@ -5,11 +5,17 @@ import { useParams, useLocation } from "react-router-dom";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface Message {
   messageId: string;
   content: string;
-  sender: string;
+  sender: {
+    _id?: string;
+    id?: string;
+    username: string;
+  };
   timestamp: string;
   type: string;
   media_URL?: string;
@@ -21,6 +27,9 @@ export default function Chat() {
   const [newMessage, setNewMessage] = useState<string>("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const userId = localStorage.getItem("userId");
+  
+  const username = localStorage.getItem("username");
+
   const location = useLocation();
   const chatPartner = location.state?.chatPartnerName || "Собеседник";
   const ws = useWebSocket();
@@ -148,6 +157,16 @@ export default function Chat() {
             response.data.conversation_id === chatId
           ) {
             setMessages((prevMessages) => [...prevMessages, response.data]);
+            // if (response.data.sender.id !== userId) {
+            //   toast.info(`Новое сообщение от ${response.data.sender}`, {
+            //     position: "top-right",
+            //     autoClose: 3000,
+            //     hideProgressBar: false,
+            //     closeOnClick: true,
+            //     pauseOnHover: true,
+            //     draggable: true,
+            //   });
+            // }
           }
         } catch (error) {
           console.error("Ошибка при парсинге сообщения:", error);
@@ -177,7 +196,10 @@ export default function Chat() {
           event: "createMessage",
           data: {
             chatId,
-            sender: userId,
+            //sender: userId,
+            sender: {
+              _id: userId,
+            },
             type: "image",
             content: base64Images,
           },
@@ -194,11 +216,17 @@ export default function Chat() {
         event: "createMessage",
         data: {
           chatId,
-          sender: userId,
+          //sender: userId,
+          sender: {
+            _id: userId,
+            username: username
+          },
           type: "text",
           content: newMessage,
         },
       };
+
+      console.log(messageData);
       ws?.send(JSON.stringify(messageData));
       setNewMessage("");
       resetTranscript();
@@ -215,7 +243,12 @@ export default function Chat() {
         {messages.map((message) => (
           <div
             key={message.messageId}
-            className={`message-item ${message.sender === userId ? "message-right" : "message-left"}`}
+            className={`message-item ${
+              message.sender._id === userId || message.sender.id === userId
+                ? "message-right"
+                : "message-left"
+            }`}
+            
           >
             {message.type === "image" && Array.isArray(message.content) ? (
               message.content.map((imageSrc, index) => (
@@ -323,6 +356,7 @@ export default function Chat() {
           </div>
         )}
       </div>
+      {/* <ToastContainer /> */}
     </div>
   );
 }

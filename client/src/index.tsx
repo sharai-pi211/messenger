@@ -14,6 +14,7 @@ import PrivateRoute from "./context/PrivateRoute";
 import Me from "./pages/Me";
 import Contacts from "./pages/Contacts";
 import Contact from "./components/Contact";
+import { ToastContainer } from "react-toastify";
 
 const router = createBrowserRouter([
   {
@@ -79,13 +80,14 @@ const root = ReactDOM.createRoot(
 );
 
 root.render(
-  <React.StrictMode>
+  // <React.StrictMode>
     <AuthProvider>
       <WebSocketProvider>
+      <ToastContainer />
         <RouterProvider router={router} />
       </WebSocketProvider>
     </AuthProvider>
-  </React.StrictMode>,
+  // </React.StrictMode>,
 );
 
 reportWebVitals();

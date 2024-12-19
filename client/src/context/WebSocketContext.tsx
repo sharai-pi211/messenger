@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { toast } from "react-toastify";
 
 const WebSocketContext = createContext<WebSocket | null>(null);
 
@@ -35,10 +36,43 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log("WebSocket соединение закрыто");
       };
 
-      socket.onmessage = (event) => {
+      /*socket.onmessage = (event) => {
         const message = JSON.parse(event.data);
         if (message.event === "userStatus") {
           console.log("Статус пользователей был запрошен устала миллиард таскать");
+        }
+      };*/
+
+      socket.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+
+          if (message.event === "newMessage") {
+            const currentUserId = localStorage.getItem("userId");
+            console.log(message.data);
+          
+            // Check if the sender is not the current user
+            if (message.data.sender.id !== currentUserId) {
+              // Show the notification
+              console.log('должен быть тост');
+      
+              const { sender, content } = message.data;
+              toast.info(`${sender.username}: ${content[0]}`, {
+                position: "bottom-right",
+                autoClose: 10000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+              });
+            }
+          }
+          
+          if (message.event === "userStatus") {
+            console.log("Статус пользователей обновлен");
+          }
+        } catch (error) {
+          console.error("Ошибка обработки сообщения WebSocket:", error);
         }
       };
 
