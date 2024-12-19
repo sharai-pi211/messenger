@@ -28,6 +28,7 @@ export async function getUserInfo(userId) {
     if (!user) {
       throw new Error("Пользователь не найден");
     }
+    console.log(user);
     return user;
   } catch (error) {
     console.error("Ошибка при получении информации о пользователе:", error);

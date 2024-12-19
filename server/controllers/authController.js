@@ -64,6 +64,9 @@ export async function register(req, res) {
 export async function authenticate(req, res) {
   try {
     const { username, password } = req.body;
+
+    console.log(username, password);
+    
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(401).json({ message: "Неверные учетные данные" });

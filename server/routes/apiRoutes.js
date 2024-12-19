@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import User from "../models/User.js";
 import Chat from "../models/Chats.js";
 import * as authController from "../controllers/authController.js";
-import { deleteUser, getAllUsers } from "../controllers/userController.js";
+import { deleteUser, getAllUsers, getUserInfo} from "../controllers/userController.js";
 import {
   getAllMessages,
   getMessageById,
@@ -16,6 +16,10 @@ import {
   getChatMessages,
   createMessage,
 } from "../controllers/chatController.js";
+import {
+  getFriends,
+  addFriend
+} from "../controllers/friendController.js";
 
 const router = express.Router();
 
@@ -235,6 +239,23 @@ router.get('/:chatId', async (req, res) => {
       message: "Ошибка при получении сообщений чата",
       error: error.message,
     });
+  }
+});
+
+
+// Получить список друзей
+router.get("/friends/:userId", getFriends);
+
+// Добавить друга
+router.post("/friends/:userId", addFriend);
+
+router.get("/users/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params; // Extract userId from the request parameters
+    const user = await getUserInfo(userId); // Call your helper function
+    res.status(200).json(user); // Send the user information as a response
+  } catch (error) {
+    res.status(404).json({ error: error.message }); // Handle errors
   }
 });
 
