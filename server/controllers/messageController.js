@@ -42,3 +42,37 @@ export async function updateReadStatus(id) {
     throw error;
   }
 }
+
+export async function addReactionToMessage(messageId, emoji, userId) {
+  const message = await Message.findById(messageId);
+  if (!message) {
+    throw new Error("Message not found");
+  }
+
+  const existingReaction = message.reactions.find(
+    (reaction) => reaction.emoji === emoji && reaction.userId.toString() === userId
+  );
+
+  if (existingReaction) {
+    return;
+  }
+
+  message.reactions.push({ emoji, userId });
+  await message.save();
+  console.log(message);
+  return message;
+}
+
+export async function removeReactionFromMessage(messageId, emoji, userId) {
+  const message = await Message.findById(messageId);
+  if (!message) {
+    throw new Error("Message not found");
+  }
+
+  message.reactions = message.reactions.filter(
+    (reaction) => !(reaction.emoji === emoji && reaction.userId.toString() === userId)
+  );
+
+  await message.save();
+  return message;
+}

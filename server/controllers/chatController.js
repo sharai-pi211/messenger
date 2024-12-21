@@ -44,50 +44,53 @@ export async function getChatsByUser(userId) {
   }
 }
 
+const labels = new Set(); // Хранит активные метки времени
 
-// получение сообщений чата
-// export async function getChatMessages(chatId) {
-//   try {
-//     const chat = await Chat.findById(chatId);
-//     if (!chat) {
-//       throw new Error("Чат не найден");
-//     }
+function startTimer(label) {
+  if (!labels.has(label)) {
+    console.time(label);
+    labels.add(label);
+  } else {
+    console.warn(`Label '${label}' already exists for console.time()`);
+  }
+}
 
-//     // Если в чате пока нет сообщений, возвращаем пустой массив
-//     if (!chat.messages || chat.messages.length === 0) {
-//       console.log("Сообщений в чате нет, возвращаем пустой массив");
-//       return [];
-//     }
+function endTimer(label) {
+  if (labels.has(label)) {
+    console.timeEnd(label);
+    labels.delete(label);
+  } else {
+    console.warn(`No such label '${label}' for console.timeEnd()`);
+  }
+}
 
-//     const messages = await Message.find({ _id: { $in: chat.messages } });
-//     return messages;
-//   } catch (error) {
-//     console.error("Ошибка при получении сообщений чата:", error);
-//     throw error;
-//   }
-// }
 
 export async function getChatMessages(chatId) {
   try {
+    console.log("getChatMessages");
+    startTimer("getChatMessages"); // Начало замера времени
+
     const chat = await Chat.findById(chatId);
     if (!chat) {
+      endTimer("getChatMessages"); // Завершаем замер, если чат не найден
       throw new Error("Чат не найден");
     }
 
     // Если в чате пока нет сообщений, возвращаем пустой массив
     if (!chat.messages || chat.messages.length === 0) {
+      endTimer("getChatMessages"); // Завершаем замер, если нет сообщений
       console.log("Сообщений в чате нет, возвращаем пустой массив");
       return [];
     }
 
-    // Находим сообщения и популируем данные отправителя
+    startTimer("findMessages"); // Замер времени поиска сообщений
     const messages = await Message.find({ _id: { $in: chat.messages } }).populate({
       path: "sender", // Поле, которое нужно популировать
       select: "username", // Указываем, какие поля нужны
     });
+    endTimer("findMessages"); // Конец замера поиска сообщений
 
-    console.log(messages);
-
+    endTimer("getChatMessages"); // Конец замера времени всей функции
     return messages;
   } catch (error) {
     console.error("Ошибка при получении сообщений чата:", error);
@@ -95,58 +98,6 @@ export async function getChatMessages(chatId) {
   }
 }
 
-
-/*
-export async function createMessage(chatId, sender, content, wss, type = "text") {
-  console.log("userId", sender);
-
-  const messageType = Array.isArray(content) && content.length > 0 ? "image" : type;
-
-  const messageData = {
-    content,
-    sender: sender,
-    timestamp: new Date(),
-    read: false,
-    type: messageType,
-    media_URL: messageType === "image" ? content : [],
-    is_deleted: false,
-    deleted_by: null,
-    conversation_id: chatId,
-  };
-
-  const message = new Message(messageData);
-
-  try {
-    await message.save();
-    const chat = await Chat.findById(chatId);
-    if (!chat) throw new Error("Чат не найден");
-
-    chat.messages.push(message._id);
-    await chat.save();
-
-    const formattedMessage = {
-      _id: message._id,
-      content: message.content,
-      sender: message.sender,
-      timestamp: message.timestamp,
-      conversation_id: chatId,
-      type: message.type,
-      media_URL: message.media_URL,
-    };
-
-    wss.clients.forEach((client) => {
-      if (client.readyState === client.OPEN) {
-        client.send(JSON.stringify({ event: "newMessage", data: formattedMessage }));
-      }
-    });
-
-    return message;
-  } catch (error) {
-    console.error("Ошибка при создании сообщения:", error);
-    throw error;
-  }
-}
-  */
 
 
 export async function createMessage(chatId, sender, content, wss, type = "text") {
@@ -193,8 +144,11 @@ export async function createMessage(chatId, sender, content, wss, type = "text")
     };
 
     wss.clients.forEach((client) => {
+      console.log('wss.clients.forEach((client)');
       if (client.readyState === client.OPEN) {
         client.send(JSON.stringify({ event: "newMessage", data: formattedMessage }));
+        console.log(formattedMessage);
+        console.log('client.send(JSON.stringify({ event: "newMessage", data: formattedMessage }));');
       }
     });
 

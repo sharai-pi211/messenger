@@ -119,7 +119,6 @@ router.post("/chats", async (req, res) => {
 router.get("/chats/user/:userId", async (req, res) => {
   try {
     const chats = await getChatsByUser(req.params.userId);
-    console.log(chats);
     res.json(chats);
   } catch (error) {
     res

@@ -38,8 +38,6 @@ export async function register(req, res) {
       avatarUrl: avatar,
     });
 
-    console.log("Новый пользователь перед сохранением:", newUser);
-
     await newUser.save();
 
     const token = generateToken(newUser._id);
@@ -63,16 +61,19 @@ export async function register(req, res) {
 
 export async function authenticate(req, res) {
   try {
+    console.log('я в логине');
     const { username, password } = req.body;
-
     console.log(username, password);
     
     const user = await User.findOne({ username });
+    console.log(user);
     if (!user) {
       return res.status(401).json({ message: "Неверные учетные данные" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
+
+    console.log(isMatch);
     if (!isMatch) {
       return res.status(401).json({ message: "Неверные учетные данные" });
     }
@@ -84,6 +85,9 @@ export async function authenticate(req, res) {
     await user.updateOne({ $set: { authToken } });
 
     res.json({ token, userId: user._id });
+
+    let a = { token, userId: user._id };
+    console.log(a);
   } catch (error) {
     console.error("Ошибка при аутентификации:", error);
     res.status(500).json({ message: "Произошла ошибка при аутентификации" });

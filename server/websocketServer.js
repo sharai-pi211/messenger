@@ -1,94 +1,3 @@
-// import { WebSocketServer } from "ws";
-// import {
-//   getChatsByUser,
-//   getChatMessages,
-//   createMessage,
-// } from "./controllers/chatController.js";
-// import { updateUserStatus } from "./controllers/userController.js";
-// import User from "./models/User.js";
-
-// export function setupWebSocket(server, app) {
-//   const wss = new WebSocketServer({ server });
-
-//   app.set("wss", wss);
-
-//   wss.on("connection", (ws) => {
-//     console.log("Новое WebSocket-соединение установлено");
-
-//     ws.on("message", async (message) => {
-//       try {
-//         const parsedMessage = JSON.parse(message);
-//         const { event, data } = parsedMessage;
-
-//         if (event === "userOnline") {
-//           const { userId } = data;
-//           ws.userId = userId;
-//           console.log(`Пользователь ${userId} онлайн`);
-//           await updateUserStatus(userId, "online");
-//           await broadcastUserStatus(wss);
-//         } else if (event === "userOffline") {
-//           const { userId } = data;
-//           console.log(`Пользователь ${userId} оффлайн`);
-//           await updateUserStatus(userId, "offline");
-//           await broadcastUserStatus(wss);
-//         } else if (event === "getUserChats") {
-//           const userId = data;
-//           const chats = await getChatsByUser(userId);
-//           ws.send(JSON.stringify({ event: "userChats", data: chats }));
-//         } else if (event === "getChatMessages") {
-//           const chatId = data;
-//           const messages = await getChatMessages(chatId);
-//           ws.send(JSON.stringify({ event: "chatMessages", data: messages }));
-//         } else if (event === "createMessage") {
-//           const { chatId, sender, content } = data;
-//           await createMessage(chatId, sender, content, wss);
-//         } else {
-//           ws.send(
-//             JSON.stringify({ event: "error", message: "Неизвестное событие" })
-//           );
-//         }
-//       } catch (error) {
-//         console.error("Ошибка при обработке сообщения:", error);
-//         ws.send(JSON.stringify({ event: "error", message: "Ошибка сервера" }));
-//       }
-//     });
-
-//     ws.on("close", async () => {
-//       console.log("Соединение закрыто");
-//       const userId = ws.userId;
-//       console.log(userId);
-
-//       if (userId) {
-//         await updateUserStatus(userId, "offline");
-//         await broadcastUserStatus(wss);
-//       }
-//     });
-//   });
-
-//   console.log("WebSocket сервер запущен");
-// }
-
-// async function broadcastUserStatus(wss) {
-//   try {
-//     const users = await User.find({}, "username status lastActive");
-//     const statusData = users.map((user) => ({
-//       userId: user._id,
-//       username: user.username,
-//       status: user.status,
-//       lastActive: user.lastActive,
-//     }));
-
-//     wss.clients.forEach((client) => {
-//       if (client.readyState === client.OPEN) {
-//         client.send(JSON.stringify({ event: "userStatus", data: statusData }));
-//       }
-//     });
-//   } catch (error) {
-//     console.error("Ошибка при рассылке статуса пользователей:", error);
-//   }
-// }
-
-/*
 import { WebSocketServer } from "ws";
 import {
   getChatsByUser,
@@ -96,166 +5,8 @@ import {
   createMessage,
 } from "./controllers/chatController.js";
 import { updateUserStatus } from "./controllers/userController.js";
-import User from "./models/User.js";
+import { addReactionToMessage, removeReactionFromMessage} from "./controllers/messageController.js";
 
-export function setupWebSocket(server, app) {
-  const wss = new WebSocketServer({ server });
-
-  app.set("wss", wss);
-
-  wss.on("connection", (ws) => {
-    console.log("Новое WebSocket-соединение установлено");
-
-    ws.on("message", async (message) => {
-      try {
-        const parsedMessage = JSON.parse(message);
-        const { event, data } = parsedMessage;
-
-        // Обновление статуса
-        if (event === "userOnline") {
-          const { userId } = data;
-          ws.userId = userId;
-          await updateUserStatus(userId, "online");
-          await broadcastUserStatus(wss);
-        } else if (event === "userOffline") {
-          const { userId } = data;
-          await updateUserStatus(userId, "offline");
-          await broadcastUserStatus(wss);
-        }
-
-        // Получение списка друзей
-        else if (event === "getUserFriends") {
-          const { userId } = data;
-          const user = await User.findById(userId).populate(
-            "friends",
-            "username avatarUrl status lastActive"
-          );
-
-          if (!user) {
-            ws.send(
-              JSON.stringify({
-                event: "error",
-                message: "Пользователь не найден",
-              })
-            );
-            return;
-          }
-
-          ws.send(
-            JSON.stringify({
-              event: "userFriends",
-              data: user.friends,
-            })
-          );
-        }
-
-        // Добавление друга
-        else if (event === "addFriend") {
-          const { userId, friendId } = data;
-
-          if (userId === friendId) {
-            ws.send(
-              JSON.stringify({
-                event: "error",
-                message: "Нельзя добавить себя в друзья",
-              })
-            );
-            return;
-          }
-
-          const user = await User.findById(userId);
-          const friend = await User.findById(friendId);
-
-          if (!user || !friend) {
-            ws.send(
-              JSON.stringify({
-                event: "error",
-                message: "Пользователь не найден",
-              })
-            );
-            return;
-          }
-
-          if (user.friends.includes(friendId)) {
-            ws.send(
-              JSON.stringify({
-                event: "error",
-                message: "Пользователь уже добавлен в друзья",
-              })
-            );
-            return;
-          }
-
-          user.friends.push(friendId);
-          await user.save();
-
-          // Добавляем двустороннюю дружбу (опционально)
-          friend.friends.push(userId);
-          await friend.save();
-
-          ws.send(
-            JSON.stringify({
-              event: "friendAdded",
-              message: "Пользователь добавлен в друзья",
-            })
-          );
-        }
-
-        // Обработка неизвестных событий
-        else {
-          ws.send(
-            JSON.stringify({ event: "error", message: "Неизвестное событие" })
-          );
-        }
-      } catch (error) {
-        console.error("Ошибка при обработке сообщения:", error);
-        ws.send(JSON.stringify({ event: "error", message: "Ошибка сервера" }));
-      }
-    });
-
-    // Обновление статуса при закрытии соединения
-    ws.on("close", async () => {
-      const userId = ws.userId;
-      if (userId) {
-        await updateUserStatus(userId, "offline");
-        await broadcastUserStatus(wss);
-      }
-    });
-  });
-
-  console.log("WebSocket сервер запущен");
-}
-
-// Широковещательная рассылка статуса пользователей
-async function broadcastUserStatus(wss) {
-  try {
-    const users = await User.find({}, "username status lastActive");
-    const statusData = users.map((user) => ({
-      userId: user._id,
-      username: user.username,
-      status: user.status,
-      lastActive: user.lastActive,
-    }));
-
-    wss.clients.forEach((client) => {
-      if (client.readyState === client.OPEN) {
-        client.send(JSON.stringify({ event: "userStatus", data: statusData }));
-      }
-    });
-  } catch (error) {
-    console.error("Ошибка при рассылке статуса пользователей:", error);
-  }
-}*/
-
-
-
-import { WebSocketServer } from "ws";
-import {
-  getChatsByUser,
-  getChatMessages,
-  createMessage,
-} from "./controllers/chatController.js";
-import { updateUserStatus } from "./controllers/userController.js";
 import User from "./models/User.js";
 
 export function setupWebSocket(server, app) {
@@ -285,17 +36,19 @@ export function setupWebSocket(server, app) {
 
         else if (event === "userOffline") {
           const { userId } = data;
-          console.log(`Пользователь ${userId} оффлайн`);
           await updateUserStatus(userId, "offline");
           await broadcastUserStatus(wss);
         } else if (event === "getUserChats") {
+          console.log("getUserChats отправляю норм");
           const userId = data;
           const chats = await getChatsByUser(userId);
           ws.send(JSON.stringify({ event: "userChats", data: chats }));
         } else if (event === "getChatMessages") {
+          console.log(`Получен запрос getChatMessages для chatId: ${data}, ${Date.now()}`);
           const chatId = data;
           const messages = await getChatMessages(chatId);
           ws.send(JSON.stringify({ event: "chatMessages", data: messages }));
+          console.log('я отправил');
         } else if (event === "createMessage") {
           const { chatId, sender, content } = data;
           await createMessage(chatId, sender, content, wss);
@@ -310,8 +63,6 @@ export function setupWebSocket(server, app) {
               path: "friends.friendId", // Указываем путь для populate
               select: "username avatarUrl status lastActive", // Только нужные поля
             });
-
-            console.log("Популяция результата:", user.friends);
 
         
             if (!user) {
@@ -343,12 +94,6 @@ export function setupWebSocket(server, app) {
               })
             );
         
-            console.log("getuserFriends",
-              JSON.stringify({
-                event: "getuserFriends",
-                data: user.friends,
-              })
-            );
           } catch (error) {
             console.error("Ошибка при получении списка друзей:", error);
             ws.send(
@@ -366,8 +111,6 @@ export function setupWebSocket(server, app) {
         else if (event === "sendFriendRequest") {
           const { userId, friendId } = data;
 
-          console.log(userId, friendId);
-
           if (userId === friendId) {
             ws.send(
               JSON.stringify({
@@ -380,8 +123,6 @@ export function setupWebSocket(server, app) {
 
           const user = await User.findById(userId);
           const friend = await User.findById(friendId);
-
-          console.log(user, friend);
 
           if (!user || !friend) {
             ws.send(
@@ -412,8 +153,6 @@ export function setupWebSocket(server, app) {
           friend.friends.push({ friendId: userId, status: "pending" });
           await user.save();
           await friend.save();
-
-          console.log(user, friend);
 
           ws.send(
             JSON.stringify({
@@ -498,10 +237,57 @@ export function setupWebSocket(server, app) {
           );
         }
 
+        // if (event === "addReaction") {
+        //   const { messageId, emoji, userId } = data;
+        //   const updatedMessage = await addReactionToMessage(messageId, emoji, userId);
+        //   ws.send(JSON.stringify({ event: "reactionAdded", data: updatedMessage }));
+        // } else if (event === "removeReaction") {
+        //   const { messageId, emoji, userId } = data;
+        //   const updatedMessage = await removeReactionFromMessage(messageId, emoji, userId);
+        //   ws.send(JSON.stringify({ event: "reactionRemoved", data: updatedMessage }));
+        // }
+
+        if (event === "addReaction") {
+          const { messageId, emoji, userId } = data;
+          const updatedMessage = await addReactionToMessage(messageId, emoji, userId);
+        
+          // Отправляем обновленное сообщение всем клиентам
+          wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(
+                JSON.stringify({
+                  event: "reactionAdded",
+                  data: updatedMessage, // Обновленное сообщение с реакциями
+                })
+              );
+            }
+          });
+        } else if (event === "removeReaction") {
+          const { messageId, emoji, userId } = data;
+          const updatedMessage = await removeReactionFromMessage(messageId, emoji, userId);
+
+          console.log(updatedMessage);
+        
+          // Рассылаем обновленное сообщение всем клиентам
+          wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(
+                JSON.stringify({
+                  event: "reactionRemoved",
+                  data: updatedMessage,
+                })
+              );
+            }
+          });
+        }
+        
+
+
         else {
           ws.send(
             JSON.stringify({ event: "error", message: "Неизвестное событие" })
           );
+          console.log(event, 'я сломал');
         }
       } catch (error) {
         console.error("Ошибка при обработке сообщения:", error);
