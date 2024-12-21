@@ -1,15 +1,20 @@
-import { useEffect, useState, useRef } from "react";
 import "../styles/Chat.css";
 import { useWebSocket } from "../context/WebSocketContext";
 import { useParams, useLocation } from "react-router-dom";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
-import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useEffect, useRef, useState } from "react";
+import { ReactionButton } from "./ReactionButton";
+
+interface Reaction {
+  emoji: string;
+  userId: string;
+}
 
 interface Message {
-  messageId: string;
+  _id: string;
   content: string;
   sender: {
     _id?: string;
@@ -19,7 +24,10 @@ interface Message {
   timestamp: string;
   type: string;
   media_URL?: string;
+  reactions?: Reaction[]; // Новое поле
 }
+
+const reactionOptions = ["👍", "❤️", "😂", "🎉", "😢", "😡", "👏", "🔥", "💯", "⭐"];
 
 export default function Chat() {
   const { chatId } = useParams<{ chatId: string }>();
@@ -27,16 +35,58 @@ export default function Chat() {
   const [newMessage, setNewMessage] = useState<string>("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const userId = localStorage.getItem("userId");
-  
   const username = localStorage.getItem("username");
-
   const location = useLocation();
   const chatPartner = location.state?.chatPartnerName || "Собеседник";
   const ws = useWebSocket();
   const MAX_FILE_SIZE_MB = 1;
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAddReaction = (messageId: string, emoji: string) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          event: "addReaction",
+          data: { messageId, emoji, userId },
+        })
+      );
+    }
+    console.log({ messageId, emoji, userId });
+  };
+  
+  const handleRemoveReaction = (messageId: string, emoji: string) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          event: "removeReaction",
+          data: { messageId, emoji, userId },
+        })
+      );
+    }
+  };
+
+  const handleReactionToggle = (messageId: string, emoji: string) => {
+    const message = messages.find((msg) => msg._id === messageId);
+  
+    if (!message) return;
+  
+    const existingReaction = message.reactions?.find(
+      (reaction) => reaction.emoji === emoji && reaction.userId === userId
+    );
+  
+    if (existingReaction) {
+      // Если реакция уже есть, удаляем её
+      handleRemoveReaction(messageId, emoji);
+      console.log('удаляю');
+    } else {
+      // Если реакции нет, добавляем её
+      handleAddReaction(messageId, emoji);
+      console.log('добавляю');
+    }
+  };
+  
+
 
   const {
     transcript,
@@ -157,17 +207,46 @@ export default function Chat() {
             response.data.conversation_id === chatId
           ) {
             setMessages((prevMessages) => [...prevMessages, response.data]);
-            // if (response.data.sender.id !== userId) {
-            //   toast.info(`Новое сообщение от ${response.data.sender}`, {
-            //     position: "top-right",
-            //     autoClose: 3000,
-            //     hideProgressBar: false,
-            //     closeOnClick: true,
-            //     pauseOnHover: true,
-            //     draggable: true,
-            //   });
-            // }
+          } 
+          //  else if (response.event === "reactionAdded" || response.event === "reactionRemoved") {
+          //     const updatedMessage = response.data;
+          //     console.log(updatedMessage);
+          //     setMessages((prevMessages) =>
+          //       prevMessages.map((msg) =>
+          //         msg._id === updatedMessage._id
+          //           ? { ...msg, reactions: updatedMessage.reactions }
+          //           : msg
+          //       )
+          //     );}
+
+          else if (response.event === "reactionAdded" || response.event === "reactionRemoved") {
+            const updatedMessage = response.data;
+            console.log(updatedMessage);
+
+            setMessages((prevMessages) =>
+              prevMessages.map((msg) =>
+                msg._id === updatedMessage._id
+                  ? {
+                      ...msg,
+                      reactions: updatedMessage.reactions.filter(
+                        (reaction: Reaction, index: number, self: Reaction[]) =>
+                          index ===
+                          self.findIndex(
+                            (r: Reaction) =>
+                              r.emoji === reaction.emoji && r.userId === reaction.userId
+                          )
+                      ),
+                    }
+                  : msg
+              )
+            );
+            
+          
+
           }
+          
+          
+          
         } catch (error) {
           console.error("Ошибка при парсинге сообщения:", error);
         }
@@ -196,7 +275,6 @@ export default function Chat() {
           event: "createMessage",
           data: {
             chatId,
-            //sender: userId,
             sender: {
               _id: userId,
             },
@@ -216,7 +294,6 @@ export default function Chat() {
         event: "createMessage",
         data: {
           chatId,
-          //sender: userId,
           sender: {
             _id: userId,
             username: username
@@ -242,12 +319,12 @@ export default function Chat() {
       <div className="messages-list">
         {messages.map((message) => (
           <div
-            key={message.messageId}
+            key={message._id}
             className={`message-item ${
               message.sender._id === userId || message.sender.id === userId
                 ? "message-right"
                 : "message-left"
-            }`}
+            } `}
             
           >
             {message.type === "image" && Array.isArray(message.content) ? (
@@ -268,6 +345,143 @@ export default function Chat() {
             ) : (
               <p>{message.content}</p>
             )}
+            {/* <div className="reactions-container">
+  {message.reactions?.map((reaction, index) => (
+    <span
+      key={index}
+      className="reaction"
+    >
+      {reaction.emoji} ({reaction.userId === userId ? "Вы" : reaction.userId})
+    </span>
+  ))}
+  <button onClick={() => handleReactionToggle(message._id, "👍")}>👍</button>
+  <button onClick={() => handleReactionToggle(message._id, "❤️")}>❤️</button>
+  <button onClick={() => handleReactionToggle(message._id, "😂")}>😂</button>
+</div> */}
+{/*  
+<div className="reactions-container">
+  {message.reactions?.map((reaction, index) => (
+    <span
+      key={index}
+      className="reaction"
+    >
+      {reaction.emoji} ({reaction.userId === userId ? "Вы" : reaction.userId})
+    </span>
+  ))}
+
+  <button
+    className={`reaction-button ${
+      message.reactions?.some(
+        (reaction) => reaction.emoji === "👍" && reaction.userId === userId
+      )
+        ? "active"
+        : ""
+    }`}
+    onClick={() => handleReactionToggle(message._id, "👍")}
+  >
+    👍
+  </button>
+  <button
+    className={`reaction-button ${
+      message.reactions?.some(
+        (reaction) => reaction.emoji === "❤️" && reaction.userId === userId
+      )
+        ? "active"
+        : ""
+    }`}
+    onClick={() => handleReactionToggle(message._id, "❤️")}
+  >
+    ❤️
+  </button>
+  <button
+    className={`reaction-button ${
+      message.reactions?.some(
+        (reaction) => reaction.emoji === "😂" && reaction.userId === userId
+      )
+        ? "active"
+        : ""
+    }`}
+    onClick={() => handleReactionToggle(message._id, "😂")}
+  >
+    😂
+  </button>
+</div>  */}
+
+{/* <div className="reactions-container">
+  {message.reactions?.map((reaction, index) => (
+    <span
+      key={index}
+      className={`reaction ${
+        reaction.userId === userId ? "reaction-blue" : "reaction-gray"
+      }`}
+    >
+      {reaction.emoji}
+    </span>
+  ))}
+
+  {reactionOptions.map((emoji) => (
+    <button
+      key={emoji}
+      className={`reaction-button ${
+        message.reactions?.some(
+          (reaction) => reaction.emoji === emoji && reaction.userId === userId
+        )
+          ? "reaction-blue"
+          : ""
+      }`}
+      onClick={() => handleReactionToggle(message._id, emoji)}
+    >
+      {emoji}
+    </button>
+  ))}
+</div> */}
+
+<div className="reactions-container">
+  {reactionOptions.map((emoji) => (
+    <button
+      key={emoji}
+      className={`reaction-button ${
+        message.reactions?.some(
+          (reaction) => reaction.emoji === emoji && reaction.userId === userId
+        )
+          ? "reaction-blue" // Если текущий пользователь поставил реакцию
+          : message.reactions?.some((reaction) => reaction.emoji === emoji)
+          ? "reaction-gray" // Если реакция есть, но её поставил другой пользователь
+          : ""
+      }`}
+      onClick={() => handleReactionToggle(message._id, emoji)}
+    >
+      {emoji}
+    </button>
+  ))}
+</div>
+
+
+{/* <div className="reactions-container">
+  {message.reactions?.map((reaction, index) => (
+    <span
+      key={index}
+      className={`reaction ${
+        reaction.userId === userId ? "reaction-blue" : "reaction-active"
+      }`}
+    >
+      {reaction.emoji}
+    </span>
+  ))}
+
+  {reactionOptions.map((emoji) => (
+    <ReactionButton
+      key={emoji}
+      emoji={emoji}
+      userId={userId}
+      messageReactions={message.reactions}
+      onToggle={(emoji) => handleReactionToggle(message._id, emoji)}
+    />
+  ))}
+</div> */}
+
+
+
             <span>{new Date(message.timestamp).toLocaleString()}</span>
           </div>
         ))}
@@ -356,7 +570,6 @@ export default function Chat() {
           </div>
         )}
       </div>
-      {/* <ToastContainer /> */}
     </div>
   );
 }

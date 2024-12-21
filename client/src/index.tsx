@@ -80,14 +80,14 @@ const root = ReactDOM.createRoot(
 );
 
 root.render(
-  // <React.StrictMode>
+  <React.StrictMode>
     <AuthProvider>
       <WebSocketProvider>
       <ToastContainer />
         <RouterProvider router={router} />
       </WebSocketProvider>
     </AuthProvider>
-  // </React.StrictMode>,
+ </React.StrictMode>,
 );
 
 reportWebVitals();

@@ -6,6 +6,8 @@ export default function Me() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState<boolean>(false);
+  const [editableUser, setEditableUser] = useState<any>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -32,6 +34,7 @@ export default function Me() {
 
         const data = await response.json();
         setUser(data);
+        setEditableUser(data);
       } catch (error) {
         console.error("Ошибка при запросе:", error);
         setError("Произошла ошибка при получении данных.");
@@ -42,6 +45,38 @@ export default function Me() {
 
     fetchUserData();
   }, []);
+
+  const handleSave = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setError("Пользователь не авторизован.");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3000/api/me", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editableUser),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setUser(data);
+      setEditableUser(data);
+      setEditMode(false);
+    } catch (error) {
+      console.error("Ошибка при сохранении:", error);
+      setError("Произошла ошибка при сохранении данных.");
+    }
+  };
 
   if (loading) {
     return <div>Загрузка...</div>;
@@ -57,12 +92,38 @@ export default function Me() {
 
       <div className="me-container">
         <div className="me-card">
-          <img src={user?.avatarUrl} alt="Avatar" className="me-avatar" />
-          <h2 className="me-username">{user?.username}</h2>
-          <p className="me-email">Email: {user?.email}</p>
-          <p className="me-created">
-            Дата создания: {new Date(user?.createdAt).toLocaleString()}
-          </p>
+          {editMode ? (
+            <>
+              <input
+                type="text"
+                value={editableUser?.username || ""}
+                onChange={(e) =>
+                  setEditableUser({ ...editableUser, username: e.target.value })
+                }
+                placeholder="Имя пользователя"
+              />
+              <input
+                type="email"
+                value={editableUser?.email || ""}
+                onChange={(e) =>
+                  setEditableUser({ ...editableUser, email: e.target.value })
+                }
+                placeholder="Email"
+              />
+              <button onClick={handleSave}>Сохранить</button>
+              <button onClick={() => setEditMode(false)}>Отмена</button>
+            </>
+          ) : (
+            <>
+              <img src={user?.avatarUrl} alt="Avatar" className="me-avatar" />
+              <h2 className="me-username">{user?.username}</h2>
+              <p className="me-email">Email: {user?.email}</p>
+              <p className="me-created">
+                Дата создания: {new Date(user?.createdAt).toLocaleString()}
+              </p>
+              <button onClick={() => setEditMode(true)}>Редактировать</button>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -241,3 +241,66 @@
   background-color: rgb(200, 197, 192);
   filter: invert(100%);
 }
+
+.reaction-button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  margin-right: 5px;
+}
+
+.reaction-button.active {
+  background-color: #f0f0f0; /* Цвет активной реакции */
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+
+.reaction {
+  display: inline-block;
+  margin: 0 5px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.reaction-active {
+  background-color: #f0f0f0; /* Серый фон для активной реакции */
+  color: #333;
+}
+
+.reaction-blue {
+  background-color: #007bff; /* Синий фон для вашей реакции */
+  color: white;
+}
+
+.reaction-button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  margin-right: 5px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.reaction-button:hover {
+  background-color: #e0e0e0;
+}
+
+.reaction-button.reaction-active {
+  background-color: #f0f0f0; /* Серый фон */
+}
+
+.reaction-button.reaction-blue {
+  background-color: #007bff; /* Синий фон */
+  color: white;
+}
+
+.reaction-button.reaction-gray {
+  background-color: #e0e0e0; /* Серый цвет */
+  color: black;
+}
