@@ -304,3 +304,79 @@
   background-color: #e0e0e0; /* Серый цвет */
   color: black;
 }
+
+.reactions-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.active-reactions {
+  display: flex;
+  gap: 4px;
+}
+
+.reaction {
+  font-size: 16px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  outline: none;
+  border: none;
+}
+
+.reaction-blue {
+  background-color: #007bff;
+  color: white;
+}
+
+.reaction-gray {
+  background-color: #e0e0e0;
+  color: black;
+}
+
+.reaction-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.reaction-button {
+  font-size: 16px;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.reaction-button:hover {
+  background-color: #f0f0f0;
+}
+
+.toggle-reactions-button {
+  font-size: 16px;
+  padding: 4px 6px;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  align-self: flex-end;
+
+}
+
+.toggle-reactions-button:hover {
+  color: #007bff;
+}
+
+.active-reactions{
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.message-item p{
+  padding: 0;
+  margin: 0;
+}

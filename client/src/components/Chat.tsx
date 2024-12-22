@@ -6,7 +6,6 @@ import SpeechRecognition, {
 } from "react-speech-recognition";
 import "react-toastify/dist/ReactToastify.css";
 import { useEffect, useRef, useState } from "react";
-import { ReactionButton } from "./ReactionButton";
 
 interface Reaction {
   emoji: string;
@@ -24,10 +23,21 @@ interface Message {
   timestamp: string;
   type: string;
   media_URL?: string;
-  reactions?: Reaction[]; // Новое поле
+  reactions?: Reaction[];
 }
 
-const reactionOptions = ["👍", "❤️", "😂", "🎉", "😢", "😡", "👏", "🔥", "💯", "⭐"];
+const reactionOptions = [
+  "👍",
+  "❤️",
+  "😂",
+  "🎉",
+  "😢",
+  "😡",
+  "👏",
+  "🔥",
+  "💯",
+  "⭐",
+];
 
 export default function Chat() {
   const { chatId } = useParams<{ chatId: string }>();
@@ -43,6 +53,16 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [activeReactionMenu, setActiveReactionMenu] = useState<string | null>(
+    null
+  );
+
+  const toggleReactionMenu = (messageId: string) => {
+    setActiveReactionMenu((prev) =>
+      prev === messageId ? null : messageId
+    );
+  };
+
   const handleAddReaction = (messageId: string, emoji: string) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(
@@ -54,7 +74,7 @@ export default function Chat() {
     }
     console.log({ messageId, emoji, userId });
   };
-  
+
   const handleRemoveReaction = (messageId: string, emoji: string) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(
@@ -68,25 +88,21 @@ export default function Chat() {
 
   const handleReactionToggle = (messageId: string, emoji: string) => {
     const message = messages.find((msg) => msg._id === messageId);
-  
+
     if (!message) return;
-  
+
     const existingReaction = message.reactions?.find(
       (reaction) => reaction.emoji === emoji && reaction.userId === userId
     );
-  
+
     if (existingReaction) {
-      // Если реакция уже есть, удаляем её
       handleRemoveReaction(messageId, emoji);
-      console.log('удаляю');
+      console.log("удаляю");
     } else {
-      // Если реакции нет, добавляем её
       handleAddReaction(messageId, emoji);
-      console.log('добавляю');
+      console.log("добавляю");
     }
   };
-  
-
 
   const {
     transcript,
@@ -207,19 +223,10 @@ export default function Chat() {
             response.data.conversation_id === chatId
           ) {
             setMessages((prevMessages) => [...prevMessages, response.data]);
-          } 
-          //  else if (response.event === "reactionAdded" || response.event === "reactionRemoved") {
-          //     const updatedMessage = response.data;
-          //     console.log(updatedMessage);
-          //     setMessages((prevMessages) =>
-          //       prevMessages.map((msg) =>
-          //         msg._id === updatedMessage._id
-          //           ? { ...msg, reactions: updatedMessage.reactions }
-          //           : msg
-          //       )
-          //     );}
-
-          else if (response.event === "reactionAdded" || response.event === "reactionRemoved") {
+          } else if (
+            response.event === "reactionAdded" ||
+            response.event === "reactionRemoved"
+          ) {
             const updatedMessage = response.data;
             console.log(updatedMessage);
 
@@ -233,20 +240,15 @@ export default function Chat() {
                           index ===
                           self.findIndex(
                             (r: Reaction) =>
-                              r.emoji === reaction.emoji && r.userId === reaction.userId
+                              r.emoji === reaction.emoji &&
+                              r.userId === reaction.userId
                           )
                       ),
                     }
                   : msg
               )
             );
-            
-          
-
           }
-          
-          
-          
         } catch (error) {
           console.error("Ошибка при парсинге сообщения:", error);
         }
@@ -296,7 +298,7 @@ export default function Chat() {
           chatId,
           sender: {
             _id: userId,
-            username: username
+            username: username,
           },
           type: "text",
           content: newMessage,
@@ -325,7 +327,6 @@ export default function Chat() {
                 ? "message-right"
                 : "message-left"
             } `}
-            
           >
             {message.type === "image" && Array.isArray(message.content) ? (
               message.content.map((imageSrc, index) => (
@@ -345,143 +346,198 @@ export default function Chat() {
             ) : (
               <p>{message.content}</p>
             )}
-            {/* <div className="reactions-container">
-  {message.reactions?.map((reaction, index) => (
-    <span
-      key={index}
-      className="reaction"
-    >
-      {reaction.emoji} ({reaction.userId === userId ? "Вы" : reaction.userId})
-    </span>
-  ))}
-  <button onClick={() => handleReactionToggle(message._id, "👍")}>👍</button>
-  <button onClick={() => handleReactionToggle(message._id, "❤️")}>❤️</button>
-  <button onClick={() => handleReactionToggle(message._id, "😂")}>😂</button>
-</div> */}
-{/*  
-<div className="reactions-container">
-  {message.reactions?.map((reaction, index) => (
-    <span
-      key={index}
-      className="reaction"
-    >
-      {reaction.emoji} ({reaction.userId === userId ? "Вы" : reaction.userId})
-    </span>
-  ))}
 
-  <button
-    className={`reaction-button ${
-      message.reactions?.some(
-        (reaction) => reaction.emoji === "👍" && reaction.userId === userId
-      )
-        ? "active"
-        : ""
-    }`}
-    onClick={() => handleReactionToggle(message._id, "👍")}
-  >
-    👍
-  </button>
-  <button
-    className={`reaction-button ${
-      message.reactions?.some(
-        (reaction) => reaction.emoji === "❤️" && reaction.userId === userId
-      )
-        ? "active"
-        : ""
-    }`}
-    onClick={() => handleReactionToggle(message._id, "❤️")}
-  >
-    ❤️
-  </button>
-  <button
-    className={`reaction-button ${
-      message.reactions?.some(
-        (reaction) => reaction.emoji === "😂" && reaction.userId === userId
-      )
-        ? "active"
-        : ""
-    }`}
-    onClick={() => handleReactionToggle(message._id, "😂")}
-  >
-    😂
-  </button>
-</div>  */}
+            {/* <div className="reactions-container">
+              {reactionOptions.map((emoji) => (
+                <button
+                  key={emoji}
+                  className={`reaction-button ${
+                    message.reactions?.some(
+                      (reaction) =>
+                        reaction.emoji === emoji && reaction.userId === userId
+                    )
+                      ? "reaction-blue" // Если текущий пользователь поставил реакцию
+                      : message.reactions?.some(
+                            (reaction) => reaction.emoji === emoji
+                          )
+                        ? "reaction-gray" // Если реакция есть, но её поставил другой пользователь
+                        : ""
+                  }`}
+                  onClick={() => handleReactionToggle(message._id, emoji)}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div> */}
 
 {/* <div className="reactions-container">
-  {message.reactions?.map((reaction, index) => (
-    <span
-      key={index}
-      className={`reaction ${
-        reaction.userId === userId ? "reaction-blue" : "reaction-gray"
-      }`}
-    >
-      {reaction.emoji}
-    </span>
-  ))}
+      <button
+        className="toggle-reactions-button"
+        onClick={() => toggleReactionMenu(message._id)}
+      >
+        😊 
+      </button>
 
-  {reactionOptions.map((emoji) => (
-    <button
-      key={emoji}
-      className={`reaction-button ${
-        message.reactions?.some(
-          (reaction) => reaction.emoji === emoji && reaction.userId === userId
-        )
-          ? "reaction-blue"
-          : ""
-      }`}
-      onClick={() => handleReactionToggle(message._id, emoji)}
-    >
-      {emoji}
-    </button>
-  ))}
+      <div className="active-reactions">
+        {message.reactions?.map((reaction, index) => (
+          <span
+            key={index}
+            className={`reaction ${
+              reaction.userId === userId ? "reaction-blue" : "reaction-gray"
+            }`}
+          >
+            {reaction.emoji}
+          </span>
+        ))}
+      </div>
+
+      {activeReactionMenu === message._id && (
+        <div className="reaction-menu">
+          {reactionOptions.map((emoji) => (
+            <button
+              key={emoji}
+              className={`reaction-button ${
+                message.reactions?.some(
+                  (reaction) =>
+                    reaction.emoji === emoji && reaction.userId === userId
+                )
+                  ? "reaction-blue"
+                  : ""
+              }`}
+              onClick={() => handleReactionToggle(message._id, emoji)}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
+    </div> */}
+
+{/* <div className="reactions-container">
+  <button
+    className="toggle-reactions-button"
+    onClick={() => toggleReactionMenu(message._id)}
+  >
+    😊 
+  </button>
+
+  <div className="active-reactions">
+    {reactionOptions.map((emoji) => {
+      // Фильтруем реакции для данного эмодзи
+      const relevantReactions = message.reactions?.filter(
+        (reaction) => reaction.emoji === emoji
+      );
+
+      if (!relevantReactions || relevantReactions.length === 0) {
+        return null; // Если реакций для эмодзи нет, ничего не рендерим
+      }
+
+      const isUserReaction = relevantReactions.some(
+        (reaction) => reaction.userId === userId
+      );
+
+      return (
+        <button
+          key={emoji}
+          className={`reaction ${isUserReaction ? "reaction-blue" : "reaction-gray"}`}
+          onClick={() => handleReactionToggle(message._id, emoji)} // Нажатие на реакцию
+        >
+          {emoji} <span className="reaction-count">{relevantReactions.length}</span>
+        </button>
+      );
+    })}
+  </div>
+
+  {activeReactionMenu === message._id && (
+    <div className="reaction-menu">
+      {reactionOptions.map((emoji) => (
+        <button
+          key={emoji}
+          className={`reaction-button ${
+            message.reactions?.some(
+              (reaction) =>
+                reaction.emoji === emoji && reaction.userId === userId
+            )
+              ? "reaction-blue"
+              : ""
+          }`}
+          onClick={() => handleReactionToggle(message._id, emoji)}
+        >
+          {emoji}
+        </button>
+      ))}
+    </div>
+  )}
 </div> */}
 
 <div className="reactions-container">
-  {reactionOptions.map((emoji) => (
-    <button
-      key={emoji}
-      className={`reaction-button ${
-        message.reactions?.some(
-          (reaction) => reaction.emoji === emoji && reaction.userId === userId
-        )
-          ? "reaction-blue" // Если текущий пользователь поставил реакцию
-          : message.reactions?.some((reaction) => reaction.emoji === emoji)
-          ? "reaction-gray" // Если реакция есть, но её поставил другой пользователь
-          : ""
-      }`}
-      onClick={() => handleReactionToggle(message._id, emoji)}
-    >
-      {emoji}
-    </button>
-  ))}
+  {/* Кнопка для переключения показа меню реакций */}
+  <button
+    className="toggle-reactions-button"
+    onClick={() => toggleReactionMenu(message._id)}
+  >
+                  <img
+                src={ "/reaction.svg"}
+                alt={"Reaction"}
+                className="reaction-icon"
+              />
+  </button>
+
+  {/* Отображение поставленных реакций с количеством */}
+  <div className="active-reactions">
+    {reactionOptions.map((emoji) => {
+      // Фильтруем реакции для данного эмодзи
+      const relevantReactions = message.reactions?.filter(
+        (reaction) => reaction.emoji === emoji
+      );
+
+      if (!relevantReactions || relevantReactions.length === 0) {
+        return null; // Если реакций для эмодзи нет, ничего не рендерим
+      }
+
+      const isUserReaction = relevantReactions.some(
+        (reaction) => reaction.userId === userId
+      );
+
+      return (
+        <button
+          key={emoji}
+          className={`reaction ${isUserReaction ? "reaction-blue" : "reaction-gray"}`}
+          onClick={() => handleReactionToggle(message._id, emoji)} // Нажатие на реакцию
+        >
+          {emoji}{" "}
+          {relevantReactions.length > 1 && (
+            <span className="reaction-count">{relevantReactions.length}</span>
+          )}
+        </button>
+      );
+    })}
+  </div>
+
+  {/* Меню доступных реакций, показывается при включении */}
+  {activeReactionMenu === message._id && (
+    <div className="reaction-menu">
+      {reactionOptions.map((emoji) => (
+        <button
+          key={emoji}
+          className={`reaction-button ${
+            message.reactions?.some(
+              (reaction) =>
+                reaction.emoji === emoji && reaction.userId === userId
+            )
+              ? "reaction-blue"
+              : ""
+          }`}
+          onClick={() => handleReactionToggle(message._id, emoji)}
+        >
+          {emoji}
+        </button>
+      ))}
+    </div>
+  )}
 </div>
 
-
-{/* <div className="reactions-container">
-  {message.reactions?.map((reaction, index) => (
-    <span
-      key={index}
-      className={`reaction ${
-        reaction.userId === userId ? "reaction-blue" : "reaction-active"
-      }`}
-    >
-      {reaction.emoji}
-    </span>
-  ))}
-
-  {reactionOptions.map((emoji) => (
-    <ReactionButton
-      key={emoji}
-      emoji={emoji}
-      userId={userId}
-      messageReactions={message.reactions}
-      onToggle={(emoji) => handleReactionToggle(message._id, emoji)}
-    />
-  ))}
-</div> */}
-
-
-
+            
             <span>{new Date(message.timestamp).toLocaleString()}</span>
           </div>
         ))}

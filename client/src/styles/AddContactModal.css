@@ -21,6 +21,10 @@
   flex-direction: column;
 }
 
+.modal-content h2 {
+  margin-top: 0;
+}
+
 .modal-contacts-list {
   max-height: 300px;
   overflow-y: auto;
