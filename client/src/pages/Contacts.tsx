@@ -1,179 +1,3 @@
-// import { useEffect, useState } from "react";
-// import { Outlet, useNavigate } from "react-router-dom";
-// import "../styles/ContactsList.css";
-// import formatLastActive from "../utils/formatLastActive";
-// import { useWebSocket } from "../context/WebSocketContext";
-// import Panel from "../components/Panel";
-// import AddContactModal from "../components/AddContactModal";
-
-// interface Chat {
-//   chatId: string;
-//   userId: string;
-//   username: string;
-//   status: string;
-//   avatarUrl?: string;
-//   lastActive: string;
-// }
-
-// export default function Contacts() {
-//   const [chats, setChats] = useState<Chat[]>([]);
-//   const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
-//   const [searchQuery, setSearchQuery] = useState<string>("");
-//   const [loading, setLoading] = useState<boolean>(true);
-//   const [error, setError] = useState<string | null>(null);
-//   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-//   const navigate = useNavigate();
-//   const ws = useWebSocket();
-
-//   const fetchChats = () => {
-//     const userId = localStorage.getItem("userId");
-
-//     if (userId && ws && ws.readyState === WebSocket.OPEN) {
-//       ws.send(JSON.stringify({ event: "getUserChats", data: userId }));
-//     }
-//   };
-
-//   useEffect(() => {
-//     if (!ws) {
-//       return;
-//     }
-  
-//     if (ws.readyState === WebSocket.OPEN) {
-//       fetchChats();
-//     } else {
-//       ws.onopen = () => {
-//         fetchChats();
-//       };
-//     }
-  
-//     ws.onmessage = (event) => {
-//       try {
-//         const message = JSON.parse(event.data);
-  
-//         if (message.event === "userChats") {
-//           const formattedData = message.data.map((chat: any) => {
-//             const userId = localStorage.getItem("userId");
-//             const otherParticipant = chat.participants.find(
-//               (participant: any) => participant._id !== userId,
-//             );
-  
-//             return {
-//               chatId: chat._id,
-//               userId: otherParticipant._id,
-//               username: otherParticipant.username,
-//               status: otherParticipant.status,
-//               avatarUrl: otherParticipant.avatarUrl,
-//               lastActive: otherParticipant.lastActive || "",
-//             };
-//           });
-  
-//           setChats(formattedData);
-//           setFilteredChats(formattedData);
-//           setLoading(false);
-//         } else if (message.event === "userStatus") {
-//           console.log("Статус пользователей:", message.data);
-//           const updatedChats = chats.map((chat) => {
-//             const updatedUser = message.data.find((user: any) => user.userId === chat.userId);
-//             if (updatedUser) {
-//               return {
-//                 ...chat,
-//                 status: updatedUser.status,
-//                 lastActive: updatedUser.lastActive,
-//               };
-//             }
-//             return chat;
-//           });
-  
-//           setChats(updatedChats);
-//           setFilteredChats(updatedChats);
-//         } else if (message.event === "error") {
-//           setError(message.message);
-//           setLoading(false);
-//         }
-//       } catch (error) {
-//         console.error("Ошибка при обработке сообщения:", error);
-//       }
-//     };
-  
-//     return () => {
-//       if (ws) {
-//         ws.onopen = null;
-//         ws.onmessage = null;
-//       }
-//     };
-//   }, [ws, chats]);
-  
-
-//   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-//     const query = e.target.value.toLowerCase();
-//     setSearchQuery(query);
-
-//     const filtered = chats.filter((chat) =>
-//       chat.username.toLowerCase().includes(query),
-//     );
-//     setFilteredChats(filtered);
-//   };
-
-
-//   return (
-//     <div className="row">
-//       <Panel />
-//       <div className="contacts-container">
-//         <div className="header">
-//           <h1>Contacts</h1>
-//           <button
-//             className="add-contact-button"
-//             onClick={() => setIsModalOpen(true)}
-//           >
-//             +
-//           </button>
-//         </div>
-//         <div className="contacts-list">
-//           <div className="search-bar">
-//             <input
-//               type="text"
-//               placeholder="Search here..."
-//               value={searchQuery}
-//               onChange={handleSearch}
-//             />
-//           </div>
-//           {filteredChats.map((chat) => (
-//             <div
-//               key={chat.chatId}
-//               className="contact-item"
-//               id={`contact-${chat.chatId}`}
-//             >
-//               <div className="avatar">
-//                 {chat.avatarUrl ? (
-//                   <img src={chat.avatarUrl} alt={chat.username} />
-//                 ) : (
-//                   <div className="default-avatar">
-//                     {chat.username.charAt(0)}
-//                   </div>
-//                 )}
-//                 <span
-//                   className={`status-indicator ${chat.status === "online" ? "online" : "offline"}`}
-//                 ></span>
-//               </div>
-//               <div className="contact-info">
-//                 <p className="contact-name">{chat.username}</p>
-//                 {chat.status !== "online" && (
-//                   <p className="contact-last-active">
-//                     Last active: {formatLastActive(chat.lastActive)}
-//                   </p>
-//                 )}
-//               </div>
-//             </div>
-//           ))}
-//         </div>
-//       </div>
-//       {isModalOpen && <AddContactModal onClose={() => setIsModalOpen(false)} />}
-//       <Outlet />
-//     </div>
-//   );
-// }
-
-
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import "../styles/ContactsList.css";
@@ -188,20 +12,25 @@ interface Friend {
   status: string;
   avatarUrl?: string;
   lastActive: string;
+  friendId?: {
+    _id: string;
+    username: string;
+    avatarUrl?: string;
+    lastActive: string;
+  };
 }
 
 export default function Contacts() {
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [filteredFriends, setFilteredFriends] = useState<Friend[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friendRequests, setFriendRequests] = useState<Friend[]>([]);
+
   const ws = useWebSocket();
   const navigate = useNavigate();
-  
 
-  // Функция получения друзей
   const fetchFriends = () => {
     const userId = localStorage.getItem("userId");
 
@@ -223,28 +52,57 @@ export default function Contacts() {
       try {
         const message = JSON.parse(event.data);
 
-        // Обработка события получения списка друзей
-        if (message.event === "getuserFriends") {
-            console.log("getuserFriends",message);
-         /* setFriends(message.data);
-          setFilteredFriends(message.data);
-          console.log("setFriends",friends);
-          setLoading(false);*/
+        if (message.event === "friendRequestAccepted") {
+          setFriendRequests((prevRequests) => {
+            const updatedRequests = prevRequests.filter(
+              (request) =>
+                request?._id?.toString() !== message.requestorId?.toString()
+            );
+            console.log("Updated friendRequests:", updatedRequests);
+            return updatedRequests;
+          });
 
-                  // Преобразуем данные в нужный формат
-                  const formattedFriends = message.data.map((friend: typeof message.data[0]) => ({
-                    _id: friend.friendId._id,
-                    username: friend.friendId.username,
-                    avatarUrl: friend.friendId.avatarUrl,
-                    status: friend.friendId.status,
-                    lastActive: friend.friendId.lastActive
-                  }));
-  
-          setFriends(formattedFriends);
-          setFilteredFriends(formattedFriends);
-          console.log("setFriends", friends);
+          setFriends((prevFriends) => {
+            const updatedFriends = [
+              ...prevFriends,
+              {
+                _id: message.requestorId,
+                username: message.username || "Unknown User",
+                avatarUrl: message.avatarUrl || "",
+                status: "accepted",
+                lastActive: message.lastActive || "",
+              },
+            ];
+            console.log("Updated friends:", updatedFriends);
+            return updatedFriends;
+          });
+        } else if (message.event === "getuserFriends") {
+          console.log("getuserFriends", message);
+
+          const formattedFriends = message.data
+            .filter((friend: any) => friend.status === "accepted")
+            .map((friend: any) => ({
+              _id: friend.friendId._id,
+              username: friend.friendId.username,
+              avatarUrl: friend.friendId.avatarUrl,
+              status: friend.status,
+              lastActive: friend.friendId.lastActive,
+            }));
+
+          const friendRequests = message.data
+            .filter((friend: any) => friend.status === "pending")
+            .map((friend: any) => ({
+              _id: friend.friendId._id,
+              username: friend.friendId.username,
+              avatarUrl: friend.friendId.avatarUrl,
+              lastActive: friend.friendId.lastActive,
+            }));
+
+          setFriends([...formattedFriends]);
+          console.log("Set friends:", formattedFriends);
+          setFriendRequests([...friendRequests]);
+          console.log("Set friendRequests:", friendRequests);
           setLoading(false);
-
         } else if (message.event === "error") {
           setError(message.message);
           setLoading(false);
@@ -260,22 +118,47 @@ export default function Contacts() {
         ws.onmessage = null;
       }
     };
-  }, [ws]);
+  }, [ws /*, friendRequests*/]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
-
-    const filtered = friends.filter((friend) =>
-      friend.username.toLowerCase().includes(query),
-    );
-    setFilteredFriends(filtered);
-    console.log(filteredFriends);
   };
 
   const handleContactClick = (contactId: string) => {
-    console.log(`Нажат бзер ${contactId}`);
     navigate(`/contacts/${contactId}`);
+  };
+
+  const handleAcceptFriendRequest = (requestorId: string) => {
+    const userId = localStorage.getItem("userId");
+
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          event: "acceptFriendRequest",
+          data: { userId, requestorId },
+        })
+      );
+      console.log(`Заявка от пользователя ${requestorId} принята`);
+    } else {
+      console.error("WebSocket не подключен.");
+    }
+  };
+
+  const handleDeclineFriendRequest = (requestorId: string) => {
+    const userId = localStorage.getItem("userId");
+
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          event: "rejectFriendRequest",
+          data: { userId, requestorId },
+        })
+      );
+      console.log(`Заявка от пользователя ${requestorId} отклонена`);
+    } else {
+      console.error("WebSocket не подключен.");
+    }
   };
 
   return (
@@ -291,56 +174,111 @@ export default function Contacts() {
             +
           </button>
         </div>
+
         <div className="contacts-list">
-          <div className="search-bar">
-            <input
-              type="text"
-              placeholder="Search friends..."
-              value={searchQuery}
-              onChange={handleSearch}
-            />
+          <div className="contacts-section">
+            <h2>Received Friend Requests</h2>
+            {friendRequests.length > 0 ? (
+              friendRequests.map((request) => (
+                <div key={request._id} className="contact-item">
+                  <div className="avatar">
+                    {request.avatarUrl ? (
+                      <img
+                        src={request.avatarUrl}
+                        alt={request.username || "User"}
+                      />
+                    ) : (
+                      <div className="default-avatar">
+                        {request.username?.charAt(0) || "?"}
+                      </div>
+                    )}
+                  </div>
+                  <div className="contact-info">
+                    <p>{request.username || "Unknown User"}</p>
+                  </div>
+                  <div className="contact-actions">
+                    <button
+                      className="accept-button"
+                      onClick={() =>
+                        handleAcceptFriendRequest(request._id || "")
+                      }
+                    >
+                      Accept
+                    </button>
+                    <button
+                      className="decline-button"
+                      onClick={() =>
+                        handleDeclineFriendRequest(request._id || "")
+                      }
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p>No pending friend requests.</p> // Рендерим сообщение вместо списка
+            )}
           </div>
-          {loading ? (
-            <p>Loading friends...</p>
-          ) : error ? (
-            <p>Error: {error}</p>
-          ) : friends.length > 0 ? (
-            friends.map((friend) => (
+
+          {/* Отправленные заявки */}
+          <div className="contacts-section">
+            <h2>Sent Friend Requests</h2>
+            {friends
+              .filter((friend) => friend.status === "pending")
+              .map((friend) => (
+                <div key={friend._id} className="contact-item">
+                  <div className="avatar">
+                    {friend.avatarUrl ? (
+                      <img src={friend.avatarUrl} alt={friend.username} />
+                    ) : (
+                      <div className="default-avatar">
+                        {friend.username.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="contact-info">
+                    <p>{friend.username}</p>
+                  </div>
+                  <p className="status-pending">Request Sent</p>
+                </div>
+              ))}
+          </div>
+
+          {/* Контакты */}
+          <div className="contacts-section">
+            <h2>Contacts</h2>
+
+            {friends.map((friend) => (
               <div
                 key={friend._id}
                 className="contact-item"
-                id={`contact-${friend._id}`}
                 onClick={() => handleContactClick(friend._id)}
               >
                 <div className="avatar">
                   {friend.avatarUrl ? (
-                    <img src={friend.avatarUrl} alt={friend.username} />
+                    <img
+                      src={friend.avatarUrl}
+                      alt={friend.username || "User"}
+                    />
                   ) : (
                     <div className="default-avatar">
-                      {friend.username.charAt(0)}
+                      {friend.username?.charAt(0) || "?"}
                     </div>
                   )}
-                  <span
-                    className={`status-indicator ${
-                      friend.status === "online" ? "online" : "offline"
-                    }`}
-                  ></span>
                 </div>
                 <div className="contact-info">
-                  <p className="contact-name">{friend.username}</p>
-                  {friend.status !== "online" && (
-                    <p className="contact-last-active">
-                      {formatLastActive(friend.lastActive)}
-                    </p>
+                  <p>{friend.username || "Unknown User"}</p>
+                  {friend.lastActive && (
+                    <p>Last Active: {formatLastActive(friend.lastActive)}</p>
                   )}
                 </div>
               </div>
-            ))
-          ) : (
-            <p>No friends found</p>
-          )}
+            ))}
+          </div>
         </div>
       </div>
+
       {isModalOpen && <AddContactModal onClose={() => setIsModalOpen(false)} />}
       <Outlet />
     </div>

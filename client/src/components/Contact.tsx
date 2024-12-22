@@ -51,9 +51,7 @@ export default function Contact() {
       <div className="contact-header">
         <img
           src={
-            contact.avatarUrl ||
-            `https://robohash.org/${contact._id}.png?size=200x200`
-          }
+            contact.avatarUrl           }
           alt={contact.username}
           className="contact-avatar"
         />
@@ -67,7 +65,7 @@ export default function Contact() {
         </div>
       </div>
 
-      <div className="contact-actions">
+      {/* <div className="contact-actions">
         <Form action="edit">
           <button type="submit" className="edit-button">
             Edit
@@ -78,7 +76,7 @@ export default function Contact() {
             Delete
           </button>
         </Form>
-      </div>
+      </div> */}
     </div>
   );
 }

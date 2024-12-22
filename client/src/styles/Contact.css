@@ -39,6 +39,9 @@
 .contact-actions {
   display: flex;
   gap: 10px;
+  flex-grow: 1;
+  justify-content: end;
+  margin-right: 10px;
 }
 
 .edit-button,
