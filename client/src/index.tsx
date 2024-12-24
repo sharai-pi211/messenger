@@ -19,7 +19,11 @@ import { ToastContainer } from "react-toastify";
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Main />,
+    element: (
+      <PrivateRoute>
+        <ChatsList />
+      </PrivateRoute>
+    )
   },
   {
     path: "/chats",

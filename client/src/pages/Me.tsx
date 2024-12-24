@@ -121,7 +121,7 @@ export default function Me() {
               <p className="me-created">
                 Дата создания: {new Date(user?.createdAt).toLocaleString()}
               </p>
-              <button onClick={() => setEditMode(true)}>Редактировать</button>
+              {/* <button onClick={() => setEditMode(true)}>Редактировать</button> */}
             </>
           )}
         </div>

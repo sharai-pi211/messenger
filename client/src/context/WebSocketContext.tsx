@@ -36,28 +36,33 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log("WebSocket соединение закрыто");
       };
 
-      /*socket.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        if (message.event === "userStatus") {
-          console.log("Статус пользователей был запрошен устала миллиард таскать");
-        }
-      };*/
-
       socket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
 
           if (message.event === "newMessage") {
             const currentUserId = localStorage.getItem("userId");
-            console.log(message.data);
           
             // Check if the sender is not the current user
-            if (message.data.sender.id !== currentUserId) {
-              // Show the notification
-              console.log('должен быть тост');
+            // if (message.data.sender.id !== currentUserId) {
       
+            //   const { sender, content } = message.data;
+            //   toast.info(`${sender.username}: ${content[0]}`, {
+            //     position: "bottom-right",
+            //     autoClose: 10000,
+            //     hideProgressBar: false,
+            //     closeOnClick: true,
+            //     pauseOnHover: true,
+            //     draggable: true,
+            //   });
+            // }
+            if (message.data.sender.id !== currentUserId) {
               const { sender, content } = message.data;
-              toast.info(`${sender.username}: ${content[0]}`, {
+            
+              // Проверяем, начинается ли контент с "data"
+              const isImage = content[0]?.startsWith("data");
+            
+              toast.info(`${sender.username}: ${isImage ? "image" : content[0]}`, {
                 position: "bottom-right",
                 autoClose: 10000,
                 hideProgressBar: false,
@@ -66,6 +71,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
                 draggable: true,
               });
             }
+            
           }
           
           if (message.event === "userStatus") {
@@ -87,7 +93,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
         wsRef.current.readyState === WebSocket.OPEN &&
         userId
       ) {
-        console.log("userOffline", userId);
         wsRef.current.send(
           JSON.stringify({ event: "userOffline", data: { userId } })
         );

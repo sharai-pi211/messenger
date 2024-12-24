@@ -3,8 +3,8 @@ import { Outlet, useNavigate } from "react-router-dom";
 import "../styles/ContactsList.css";
 import Panel from "./Panel";
 import formatLastActive from "../utils/formatLastActive";
-import AddContactModal from "./AddContactModal";
 import { useWebSocket } from "../context/WebSocketContext";
+import SendMessageModal from "./SendMessageModal";
 
 interface Chat {
   chatId: string;
@@ -71,7 +71,6 @@ export default function ChatsList() {
           setFilteredChats(formattedData);
           setLoading(false);
         } else if (message.event === "userStatus") {
-          console.log("Статус пользователей:", message.data);
           const updatedChats = chats.map((chat) => {
             const updatedUser = message.data.find((user: any) => user.userId === chat.userId);
             if (updatedUser) {
@@ -115,9 +114,39 @@ export default function ChatsList() {
   };
 
   const handleChatClick = (chatId: string, chatPartnerName: string) => {
-    console.log(`Нажат чат ${chatId}, собеседник: ${chatPartnerName}`);
     navigate(`/chats/${chatId}`, { state: { chatPartnerName } });
   };
+
+  const addChat = (newChat: Chat) => {
+    if (!newChat || !newChat.chatId || !newChat.username) {
+      console.warn("Некорректные данные чата:", newChat);
+      return;
+    }
+  
+    setChats((prevChats) => {
+      // Проверяем, существует ли уже чат с таким chatId
+      const chatExists = prevChats.some((chat) => chat.chatId === newChat.chatId);
+  
+      if (chatExists) {
+        console.warn("Чат с таким ID уже существует:", newChat.chatId);
+        return prevChats; // Возвращаем текущий список без изменений
+      }
+  
+      return [newChat, ...prevChats];
+    });
+  
+    setFilteredChats((prevChats) => {
+      // Аналогичная проверка для отфильтрованного списка
+      const chatExists = prevChats.some((chat) => chat.chatId === newChat.chatId);
+  
+      if (chatExists) {
+        return prevChats;
+      }
+  
+      return [newChat, ...prevChats];
+    });
+  };
+  
 
   return (
     <div className="row">
@@ -153,7 +182,7 @@ export default function ChatsList() {
                   <img src={chat.avatarUrl} alt={chat.username} />
                 ) : (
                   <div className="default-avatar">
-                    {chat.username.charAt(0)}
+                    {chat.username?.charAt(0) || "?"}
                   </div>
                 )}
                 <span
@@ -172,7 +201,7 @@ export default function ChatsList() {
           ))}
         </div>
       </div>
-      {isModalOpen && <AddContactModal onClose={() => setIsModalOpen(false)} />}
+      {isModalOpen && <SendMessageModal onClose={() => setIsModalOpen(false)} onChatCreated={addChat} />}
       <Outlet />
     </div>
   );

@@ -24,7 +24,7 @@
 
 .add-contact-button {
   background-color: var(--dg);
-  color: var(--black);
+  color: black;
   border: none;
   border-radius: 50%;
   width: 32px;

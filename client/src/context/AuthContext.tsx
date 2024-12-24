@@ -21,10 +21,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     if (token) {
       setIsAuthenticated(true);
-      console.log("Пользователь авторизован");
     } else {
       setIsAuthenticated(false);
-      console.log("Пользователь не авторизован");
     }
   };
 
@@ -45,8 +43,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.removeItem("token");
     setIsAuthenticated(false);
   };
-
-  console.log(isAuthenticated, "isAuthenticated");
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, login, logout }}>

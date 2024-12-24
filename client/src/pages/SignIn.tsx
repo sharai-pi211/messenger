@@ -22,14 +22,11 @@ export default function SignIn() {
         }),
       });
 
-      console.log(JSON.stringify(response));
-
       const contentType = response.headers.get("content-type");
 
       if (contentType && contentType.includes("application/json")) {
         const data = await response.json();
         if (response.ok) {
-          console.log("Пользователь успешно вошел:", data);
 
           localStorage.setItem("token", data.token);
           // localStorage.setItem("username", data.username);

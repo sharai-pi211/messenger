@@ -107,3 +107,48 @@
   border: 1px solid #ccc;
 }
 
+.message-input-modal{
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+  "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+  sans-serif;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  font-size: 14px;
+  padding: 10px;
+  background-color: var(--lg);
+  margin-bottom: 10px;
+}
+
+.send-mod-icon img{
+  width: 24px;
+  height: 24px;
+}
+
+.send-message-button{
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  outline: none;
+  border: none;
+  border-radius: 5px;
+}
+
+.send-message-button:disabled{
+  visibility: hidden;
+}
+
+.cancel-request-button{
+  border-radius: 20px;
+  padding: 10px 14px;
+  outline: none; 
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.send-request-button{
+  border-radius: 20px;
+  padding: 11px;
+  outline: none; 
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
