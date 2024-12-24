@@ -3,9 +3,14 @@ import {
   getChatsByUser,
   getChatMessages,
   createMessage,
+  createOrUpdateChat,
 } from "./controllers/chatController.js";
 import { updateUserStatus } from "./controllers/userController.js";
-import { addReactionToMessage, removeReactionFromMessage} from "./controllers/messageController.js";
+import {
+  addReactionToMessage,
+  removeReactionFromMessage,
+} from "./controllers/messageController.js";
+
 
 import User from "./models/User.js";
 
@@ -32,31 +37,24 @@ export function setupWebSocket(server, app) {
           const { userId } = data;
           await updateUserStatus(userId, "offline");
           await broadcastUserStatus(wss);
-        }
-
-        else if (event === "userOffline") {
+        } else if (event === "userOffline") {
           const { userId } = data;
           await updateUserStatus(userId, "offline");
           await broadcastUserStatus(wss);
         } else if (event === "getUserChats") {
-          console.log("getUserChats отправляю норм");
           const userId = data;
           const chats = await getChatsByUser(userId);
           ws.send(JSON.stringify({ event: "userChats", data: chats }));
         } else if (event === "getChatMessages") {
-          console.log(`Получен запрос getChatMessages для chatId: ${data}, ${Date.now()}`);
           const chatId = data;
           const messages = await getChatMessages(chatId);
           ws.send(JSON.stringify({ event: "chatMessages", data: messages }));
-          console.log('я отправил');
         } else if (event === "createMessage") {
           const { chatId, sender, content } = data;
           await createMessage(chatId, sender, content, wss);
-        } 
-
-        else if (event === "getUserFriends") {
+        } else if (event === "getUserFriends") {
           const { userId } = data;
-        
+
           try {
             // Находим пользователя и заполняем поле friends.friendId
             const user = await User.findById(userId).populate({
@@ -64,7 +62,6 @@ export function setupWebSocket(server, app) {
               select: "username avatarUrl status lastActive", // Только нужные поля
             });
 
-        
             if (!user) {
               ws.send(
                 JSON.stringify({
@@ -74,26 +71,13 @@ export function setupWebSocket(server, app) {
               );
               return;
             }
-        
-            // Преобразуем друзей в удобный формат
-            /*const friendsList = user.friends
-              .filter((friend) => friend.friendId) // Исключаем записи с пустым friendId
-              .map((friend) => ({
-                _id: friend.friendId._id,
-                username: friend.friendId.username,
-                avatarUrl: friend.friendId.avatarUrl,
-                status: friend.friendId.status,
-                lastActive: friend.friendId.lastActive,
-                friendshipStatus: friend.status, // Статус дружбы: pending, accepted, rejected
-              }));*/
-        
+
             ws.send(
               JSON.stringify({
                 event: "getuserFriends",
                 data: user.friends,
               })
             );
-        
           } catch (error) {
             console.error("Ошибка при получении списка друзей:", error);
             ws.send(
@@ -103,12 +87,7 @@ export function setupWebSocket(server, app) {
               })
             );
           }
-        }
-        
-        
-
-        // Отправить запрос дружбы
-        else if (event === "sendFriendRequest") {
+        } else if (event === "sendFriendRequest") {
           const { userId, friendId } = data;
 
           if (userId === friendId) {
@@ -137,7 +116,8 @@ export function setupWebSocket(server, app) {
           // Проверка на существующий запрос
           if (
             user.friends.some(
-              (f) => f.friendId.toString() === friendId && f.status === "pending"
+              (f) =>
+                f.friendId.toString() === friendId && f.status === "pending"
             )
           ) {
             ws.send(
@@ -160,10 +140,44 @@ export function setupWebSocket(server, app) {
               message: "Запрос отправлен",
             })
           );
-        }
+        } else if (event === "cancelFriendRequest") {
+          const { userId, friendId } = data;
 
-        // Принять запрос дружбы
-        else if (event === "acceptFriendRequest") {
+          // Проверка на существование пользователей
+          const user = await User.findById(userId);
+          const friend = await User.findById(friendId);
+
+          if (!user || !friend) {
+            ws.send(
+              JSON.stringify({
+                event: "error",
+                message: "Пользователь не найден",
+              })
+            );
+            return;
+          }
+
+          // Удаляем заявку из списка друзей пользователя
+          user.friends = user.friends.filter(
+            (f) => f.friendId.toString() !== friendId || f.status !== "pending"
+          );
+
+          // Удаляем заявку из списка друзей друга
+          friend.friends = friend.friends.filter(
+            (f) => f.friendId.toString() !== userId || f.status !== "pending"
+          );
+
+          await user.save();
+          await friend.save();
+
+          // Отправляем клиенту подтверждение
+          ws.send(
+            JSON.stringify({
+              event: "friendRequestCancelled",
+              message: "Запрос в друзья отменен",
+            })
+          );
+        } else if (event === "acceptFriendRequest") {
           const { userId, requestorId } = data;
 
           const user = await User.findById(userId);
@@ -199,10 +213,7 @@ export function setupWebSocket(server, app) {
               message: "Запрос принят",
             })
           );
-        }
-
-        // Отклонить запрос дружбы
-        else if (event === "rejectFriendRequest") {
+        } else if (event === "rejectFriendRequest") {
           const { userId, requestorId } = data;
 
           const user = await User.findById(userId);
@@ -235,40 +246,32 @@ export function setupWebSocket(server, app) {
               message: "Запрос отклонён",
             })
           );
-        }
-
-        // if (event === "addReaction") {
-        //   const { messageId, emoji, userId } = data;
-        //   const updatedMessage = await addReactionToMessage(messageId, emoji, userId);
-        //   ws.send(JSON.stringify({ event: "reactionAdded", data: updatedMessage }));
-        // } else if (event === "removeReaction") {
-        //   const { messageId, emoji, userId } = data;
-        //   const updatedMessage = await removeReactionFromMessage(messageId, emoji, userId);
-        //   ws.send(JSON.stringify({ event: "reactionRemoved", data: updatedMessage }));
-        // }
-
-        if (event === "addReaction") {
+        } else if (event === "addReaction") {
           const { messageId, emoji, userId } = data;
-          const updatedMessage = await addReactionToMessage(messageId, emoji, userId);
-        
-          // Отправляем обновленное сообщение всем клиентам
+          const updatedMessage = await addReactionToMessage(
+            messageId,
+            emoji,
+            userId
+          );
+
           wss.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
               client.send(
                 JSON.stringify({
                   event: "reactionAdded",
-                  data: updatedMessage, // Обновленное сообщение с реакциями
+                  data: updatedMessage,
                 })
               );
             }
           });
         } else if (event === "removeReaction") {
           const { messageId, emoji, userId } = data;
-          const updatedMessage = await removeReactionFromMessage(messageId, emoji, userId);
+          const updatedMessage = await removeReactionFromMessage(
+            messageId,
+            emoji,
+            userId
+          );
 
-          console.log(updatedMessage);
-        
-          // Рассылаем обновленное сообщение всем клиентам
           wss.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
               client.send(
@@ -279,15 +282,70 @@ export function setupWebSocket(server, app) {
               );
             }
           });
+        } 
+        else if (event === "createChat") {
+          const { userIds } = data; // Принимаем массив userIds из события
+        
+          if (!Array.isArray(userIds) || userIds.length < 2) {
+            ws.send(
+              JSON.stringify({
+                event: "error",
+                message: "Нужны минимум два пользователя для создания чата",
+              })
+            );
+            return;
+          }
+        
+          // Удаляем дубликаты пользователей
+          const uniqueUserIds = [...new Set(userIds)];
+          if (uniqueUserIds.length !== userIds.length) {
+            ws.send(
+              JSON.stringify({
+                event: "error",
+                message: "Дубликаты пользователей недопустимы",
+              })
+            );
+            return;
+          }
+        
+          try {
+            // Логика создания или обновления чата
+            const chat = await createOrUpdateChat(...uniqueUserIds);
+        
+            // Отправляем событие через WebSocket всем подключённым клиентам
+            wss.clients.forEach((client) => {
+              if (client.readyState === client.OPEN) {
+                client.send(
+                  JSON.stringify({
+                    event: "chatUpdated",
+                    data: chat,
+                  })
+                );
+              }
+            });
+        
+            // Отправляем подтверждение отправителю
+            ws.send(
+              JSON.stringify({
+                event: "chatCreated",
+                data: chat,
+              })
+            );
+          } catch (error) {
+            console.error("Ошибка при создании чата:", error);
+            ws.send(
+              JSON.stringify({
+                event: "error",
+                message: "Произошла ошибка при создании чата",
+              })
+            );
+          }
         }
         
-
-
         else {
           ws.send(
             JSON.stringify({ event: "error", message: "Неизвестное событие" })
           );
-          console.log(event, 'я сломал');
         }
       } catch (error) {
         console.error("Ошибка при обработке сообщения:", error);
@@ -307,23 +365,22 @@ export function setupWebSocket(server, app) {
   console.log("WebSocket сервер запущен");
 }
 
-
 async function broadcastUserStatus(wss) {
-    try {
-      const users = await User.find({}, "username status lastActive");
-      const statusData = users.map((user) => ({
-        userId: user._id,
-        username: user.username,
-        status: user.status,
-        lastActive: user.lastActive,
-      }));
-  
-      wss.clients.forEach((client) => {
-        if (client.readyState === client.OPEN) {
-          client.send(JSON.stringify({ event: "userStatus", data: statusData }));
-        }
-      });
-    } catch (error) {
-      console.error("Ошибка при рассылке статуса пользователей:", error);
-    }
+  try {
+    const users = await User.find({}, "username status lastActive");
+    const statusData = users.map((user) => ({
+      userId: user._id,
+      username: user.username,
+      status: user.status,
+      lastActive: user.lastActive,
+    }));
+
+    wss.clients.forEach((client) => {
+      if (client.readyState === client.OPEN) {
+        client.send(JSON.stringify({ event: "userStatus", data: statusData }));
+      }
+    });
+  } catch (error) {
+    console.error("Ошибка при рассылке статуса пользователей:", error);
   }
+}

@@ -65,24 +65,47 @@ export async function deleteUser(userId) {
   }
 }
 
-export async function getAllUsers() {
+export async function getAllUsers(currentUserId) {
   try {
+    // Получаем текущего пользователя с заполнением друзей
+    const currentUser =
+      await User.findById(currentUserId).populate("friends.friendId");
+
+    if (!currentUser) {
+      throw new Error("Текущий пользователь не найден");
+    }
+
+    // Получаем всех пользователей с заполнением их друзей
     const users = await User.find(
       {},
-      "_id username status avatarUrl lastActive"
-    );
+      "_id username status avatarUrl lastActive friends"
+    ).populate("friends.friendId", "_id username avatarUrl lastActive");
 
     if (!users.length) {
       throw new Error("Пользователи не найдены");
     }
 
-    const formattedUsers = users.map((user) => ({
-      userId: user._id.toString(),
-      username: user.username,
-      status: user.status,
-      avatarUrl: user.avatarUrl,
-      lastActive: user.lastActive,
-    }));
+    // Создаём карту статусов друзей
+    const friendStatusMap = new Map(
+      currentUser.friends.map((friend) => [
+        friend.friendId._id.toString(),
+        friend.status,
+      ])
+    );
+
+    // Форматируем пользователей
+    const formattedUsers = users
+      .filter((user) => user._id.toString() !== currentUserId) // Исключаем текущего пользователя
+      .map((user) => {
+        const status = friendStatusMap.get(user._id.toString()) || "none"; // Проверяем статус дружбы
+        return {
+          userId: user._id.toString(),
+          username: user.username,
+          status: status, // Устанавливаем статус
+          avatarUrl: user.avatarUrl || null, // Устанавливаем avatarUrl
+          lastActive: user.lastActive || null, // Устанавливаем lastActive
+        };
+      });
 
     return formattedUsers;
   } catch (error) {
@@ -102,7 +125,6 @@ export async function updateUserStatus(userId, status) {
       status,
       lastActive: new Date(),
     });
-
   } catch (error) {
     console.error("Ошибка при обновлении статуса пользователя:", error);
   }

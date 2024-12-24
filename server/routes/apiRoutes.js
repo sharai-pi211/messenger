@@ -31,6 +31,7 @@ router.get("/me", authController.isAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select("-password");
     res.json(user);
+    console.log(user);
   } catch (error) {
     console.error("Ошибка при получении информации о пользователе:", error);
     res
@@ -212,12 +213,20 @@ router.put(
   },
 );
 
-router.get("/users", async (req, res) => {
+router.post("/users", async (req, res) => {
   try {
-    const users = await getAllUsers();
+    const { currentUserId } = req.body; // Извлекаем userId из тела запроса
+
+    if (!currentUserId) {
+      return res.status(400).json({ message: "User ID не предоставлен" });
+    }
+
+    const users = await getAllUsers(currentUserId);
     res.status(200).json(users);
   } catch (error) {
-    res.status(500).json({ message: "Не удалось получить список пользователей", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Не удалось получить список пользователей", error: error.message });
   }
 });
 
@@ -255,6 +264,41 @@ router.get("/users/:userId", async (req, res) => {
     res.status(200).json(user); // Send the user information as a response
   } catch (error) {
     res.status(404).json({ error: error.message }); // Handle errors
+  }
+});
+
+router.post("/getAvailableContacts", async (req, res) => {
+  try {
+    const { currentUserId } = req.body;
+
+    if (!currentUserId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    // Находим все чаты текущего пользователя
+    const chats = await Chat.find({
+      participants: { $in: [currentUserId] },
+    });
+
+    // Собираем ID пользователей, с которыми уже есть чаты
+    const userIdsInChats = new Set();
+    chats.forEach((chat) => {
+      chat.participants.forEach((participant) => {
+        if (participant.toString() !== currentUserId) {
+          userIdsInChats.add(participant.toString());
+        }
+      });
+    });
+
+    // Ищем всех пользователей, исключая текущего пользователя и тех, с кем уже есть чаты
+    const availableContacts = await User.find({
+      _id: { $nin: [...userIdsInChats, currentUserId] }, // Исключаем IDs
+    }).select("username avatarUrl lastActive"); // Только нужные поля
+
+    res.status(200).json(availableContacts);
+  } catch (error) {
+    console.error("Ошибка при получении доступных контактов:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

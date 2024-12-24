@@ -59,7 +59,6 @@ export async function addReactionToMessage(messageId, emoji, userId) {
 
   message.reactions.push({ emoji, userId });
   await message.save();
-  console.log(message);
   return message;
 }
 

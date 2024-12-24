@@ -67,7 +67,6 @@ function endTimer(label) {
 
 export async function getChatMessages(chatId) {
   try {
-    console.log("getChatMessages");
     startTimer("getChatMessages"); // Начало замера времени
 
     const chat = await Chat.findById(chatId);
@@ -144,11 +143,8 @@ export async function createMessage(chatId, sender, content, wss, type = "text")
     };
 
     wss.clients.forEach((client) => {
-      console.log('wss.clients.forEach((client)');
       if (client.readyState === client.OPEN) {
         client.send(JSON.stringify({ event: "newMessage", data: formattedMessage }));
-        console.log(formattedMessage);
-        console.log('client.send(JSON.stringify({ event: "newMessage", data: formattedMessage }));');
       }
     });
 
